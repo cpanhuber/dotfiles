@@ -10,18 +10,17 @@ Thanks to [DDrexl](https://github.com/ddrexl) who helped me getting started with
 with, but not only, the collection of dotfiles.
 
 ## Install
+### Copy & Paste Installation (Interaction is still required)
+The bootstrapper script, will overwrite the dotfiles in your home directory, so you should make a backup.
+You will be asked for confirmation though.
+The bootstrap script also installs a customized fork of the oh-my-zsh theme with some plugins being activated by default.
+There are also some tweaks that enable colors in the terminal.
 
-Clone the repository.
 ```bash
-git clone https://github.com/FaBrand/dotfiles
+git clone git@github.com:FaBrand/dotfiles.git ~/dotfiles
+~/dotfiles/bootstrap.bash
 ```
 
-Run the bootstrapper script. It will overwrite the dotfiles in your home
-directory, so you should make a backup.
-The bootstrap script also installs a customized fork of the oh-my-zsh theme with some plugins being activated by default
-```bash
-./bootstrap.bash
-```
 ## Known Problems
 
 On some setups it appears that the install of oh-my-zsh can't wasn't successfull.
@@ -37,15 +36,17 @@ Open the link if this error ocurs [PAM authentication Error](https://www.google.
 ## Add your private configuration
 
 The following files are reserved for your private local configuration:
- - `~/.gitconfig`
  - `~/.vimrc.local`
  - `~/.zshrc.local`
 
 If they don't exist, an initial version will be set up.
-Subsequent calls to the bootstrap won't overwrite these files.
 
-## MISC
-I like to use the [arc-theme](https://github.com/horst3180/arc-theme) alongside the solarized dark colorscheme.
+Your .gitconfig will be amended with an include to the git settings from here.
+This is only done once (if necessary)
+```
+[include]
+    path = ~/.git_settings
+```
 
 ## Feedback
 
@@ -54,3 +55,4 @@ Feel free to leave your [suggestions/improvements](https://github.com/FaBrand/do
 ## Thanks to…
 
 * [Mathias Bynens](https://mathiasbynens.be/) and his [dotfiles repository](https://github.com/mathiasbynens/dotfiles)
+

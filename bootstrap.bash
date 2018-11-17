@@ -78,9 +78,12 @@ function copy_to_home() {
     echo "";
     if [[ $REPLY =~ ^[Yy]$ ]]; then
 
-        # never overwrite existing .gitconfig
-        if [ ! -f ~/.gitconfig ]; then
-            cp .gitconfig ~/.gitconfig
+        touch ~/.gitconfig
+        # Check if the extended config is already included
+        grep 'path = ~/.git_settings' ~/.gitconfig > /dev/null
+        if [ ! $? -eq 0 ]; then
+            echo "[include]" >> ~/.gitconfig
+            echo "    path = ~/.git_settings" >> ~/.gitconfig
         fi
 
         # never overwrite existing .vimrc.local
@@ -96,7 +99,6 @@ function copy_to_home() {
 
         rsync --exclude '.git/' \
             --exclude 'bootstrap.bash' \
-            --exclude '.gitconfig' \
             --exclude '.vimrc.local' \
             --exclude 'README.md' \
             --exclude 'catkin_aliases/*' \

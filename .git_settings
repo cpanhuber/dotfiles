@@ -1,6 +1,7 @@
 [credential]
     # for linux only
     helper = store
+
 [alias]
     # for gerrit only
     prr = pull --rebase
@@ -24,17 +25,18 @@
     autosetupmerge = always
     # pull --rebase default
     autosetuprebase = always
+
 [core]
     eol = native
     excludesfile = ~/.gitignore
+
 [help]
     # Automatically correct and execute mistyped commands
     autocorrect = 1
+
 [init]
     templatedir = ~/.git_template
+
 [user]
     # force user config on a per repo basis if no global user config
     useconfigonly = true
-
-# vim: sw=4 ts=4 et filetype=gitconfig:
-# vim: sw=4 ts=4 et:
