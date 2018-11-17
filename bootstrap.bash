@@ -124,9 +124,19 @@ function install_vim_configuration() {
 
 }
 
+function prepare_bazel() {
+    dpkg -s bazel > /dev/null
+    if [ $? -eq 1 ]; then
+        echo "deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
+        curl https://bazel.build/bazel-release.pub.gpg | sudo apt-key add -
+    fi
+}
+
 function install_packages() {
     # Install usefull packages
+    prepare_bazel
     packages=(
+        bazel
         build-essential
         clang-format
         clang-tidy
@@ -161,8 +171,8 @@ function install_packages() {
 }
 
 function install_full() {
-    copy_to_home
     install_packages
+    copy_to_home
     install_powerline_fonts
     install_solarized_color_scheme
     install_oh_my_zsh
