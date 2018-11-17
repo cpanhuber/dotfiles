@@ -33,9 +33,7 @@ function install_oh_my_zsh() {
         sh -c "$(curl -fsSL https://raw.githubusercontent.com/FaBrand/oh-my-zsh/master/tools/install.sh)"
     else
         echo 'OhMyZsh already installed - updating config'
-        cd $ZSH
-        git pull
-        cd -
+        git -C $ZSH pull
     fi
 }
 
