@@ -178,7 +178,6 @@ function install_packages() {
         valgrind
         xsel
         zsh
-        source-highlight
     )
 
     echo 'Performing apt-get update'
