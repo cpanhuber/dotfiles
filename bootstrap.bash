@@ -74,32 +74,48 @@ function install_solarized_color_scheme() {
 }
 
 function copy_to_home() {
+    touch ~/.gitconfig
+    # Check if the extended config is already included
+    grep 'path = ~/.git_settings' ~/.gitconfig > /dev/null
+    if [ ! $? -eq 0 ]; then
+        echo "[include]" >> ~/.gitconfig
+        echo "    path = ~/.git_settings" >> ~/.gitconfig
+    fi
+
+    # never overwrite existing .vimrc.local
+    if [ ! -f ~/.vimrc.local ]; then
+        cp .vimrc.local ~/.vimrc.local
+    fi
+
+    # Create an initial zshrc.local if it didn't exist
+    if [ ! -f ~/.zshrc.local ]; then
+        cp .zshrc.local ~/.zshrc.local
+    fi
+
     read -p "Do you want to copy the dotfiles to your home reposory? (This may overwrite some files) Are you sure? (y/n) " -n 1;
     echo "";
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-
-        touch ~/.gitconfig
-        # Check if the extended config is already included
-        grep 'path = ~/.git_settings' ~/.gitconfig > /dev/null
-        if [ ! $? -eq 0 ]; then
-            echo "[include]" >> ~/.gitconfig
-            echo "    path = ~/.git_settings" >> ~/.gitconfig
-        fi
-
-        # never overwrite existing .vimrc.local
-        if [ ! -f ~/.vimrc.local ]; then
-            cp .vimrc.local ~/.vimrc.local
-        fi
-
-        # Backup a possibly existing zshrc file
+        # Move an existing version of zshrc to .zshrc.local
         if [ -f ~/.zshrc ]; then
-            echo "Created backup file from existing zshrc file"
-            cp ~/.zshrc ~/backup.zshrc
+            if [ ! -f ~/.zshrc.local ]; then
+                mv ~/.zshrc ~/.zshrc.local
+                echo "Moved previous zshrc to .zshrc.local"
+                echo "Please remove the zsh configuration specific settings once the editor shows up"
+                sleep 5
+                echo "Opening file with default editor: '$EDITOR'"
+                $EDITOR ~/.zshrc.local
+            else
+                backup_file=~/.zshrc.backup
+                echo "Created backup file '${backup_file}' from existing zshrc file"
+                cp ~/.zshrc $backup_file
+            fi
         fi
+
 
         rsync --exclude '.git/' \
             --exclude 'bootstrap.bash' \
             --exclude '.vimrc.local' \
+            --exclude '.zshrc.local' \
             --exclude 'README.md' \
             --exclude 'catkin_aliases/*' \
             -avh --no-perms . ~;
