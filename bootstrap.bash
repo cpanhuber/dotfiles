@@ -160,12 +160,6 @@ function install_packages() {
     echo ${packages[*]} | xargs sudo apt install --assume-yes
 }
 
-function install_arc_theme() {
-    sudo sh -c "echo 'deb http://download.opensuse.org/repositories/home:/Horst3180/xUbuntu_16.04/ /' > /etc/apt/sources.list.d/arc-theme.list"
-    sudo apt-get update
-    sudo apt-get install arc-theme
-}
-
 function install_full() {
     copy_to_home
     install_packages
@@ -175,7 +169,6 @@ function install_full() {
     install_vim_configuration
     install_fzf
     setup_catkin_aliases
-    # install_arc_theme
 }
 
 install_full
