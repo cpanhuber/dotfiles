@@ -66,7 +66,14 @@ if filereadable(expand("~/.vim/autoload/plug.vim"))
     Plug 'rdnetto/YCM-Generator', { 'branch': 'stable'}
     Plug 'vim-syntastic/syntastic'                                           " Clang Tidy etc
     Plug 'tikhomirov/vim-glsl'                                               " Syntax highlighting for glsl
+    Plug 'bazelbuild/vim-bazel'
+    Plug 'google/vim-maktaba'
+    Plugin 'google/vim-codefmt' 
+    Plugin 'google/vim-maktaba'
+    Plugin 'google/vim-glaive'
     call plug#end()
+    call glaive#Install()
+    Glaive codefmt plugin[mappings]
 endif
 " }
 
@@ -510,6 +517,20 @@ endif
 if isdirectory(expand("~/.vim/plugged/vim-glsl/"))
     autocmd! BufNewFile,BufRead *.vs,*.fs,*.*shader set ft=glsl
 endif
+" }
+" { Google-codefmt
+if isdirectory(expand("~/.vim/plugged/vim-codefmt/"))
+    augroup autoformat_settings
+      autocmd FileType bzl AutoFormatBuffer buildifier
+      " autocmd FileType c,cpp,proto,javascript AutoFormatBuffer clang-format
+      autocmd FileType dart AutoFormatBuffer dartfmt
+      autocmd FileType go AutoFormatBuffer gofmt
+      autocmd FileType gn AutoFormatBuffer gn
+      " autocmd FileType html,css,json AutoFormatBuffer js-beautify
+      autocmd FileType java AutoFormatBuffer google-java-format
+      autocmd FileType python AutoFormatBuffer yapf
+      " Alternative: autocmd FileType python AutoFormatBuffer autopep8
+augroup ENDendif
 " }
 " }
 
