@@ -72,8 +72,6 @@ if filereadable(expand("~/.vim/autoload/plug.vim"))
     Plug 'google/vim-maktaba'
     Plug 'google/vim-glaive'
     call plug#end()
-    call glaive#Install()
-    Glaive codefmt plugin[mappings]
 endif
 " }
 
@@ -279,7 +277,7 @@ vnoremap . :normal .<CR>
 cmap w!! w !sudo tee % >/dev/null
 
 " Adjust viewports to the same size
-nnoremap <Leader>= <C-w>=
+" nnoremap <Leader>= <C-w>=
 
 " Map <Leader>ff to display all lines with keyword under cursor
 " and ask which one to jump to
@@ -518,6 +516,7 @@ if isdirectory(expand("~/.vim/plugged/vim-glsl/"))
     autocmd! BufNewFile,BufRead *.vs,*.fs,*.*shader set ft=glsl
 endif
 " }
+
 " { Google-codefmt
 if isdirectory(expand("~/.vim/plugged/vim-codefmt/"))
     augroup autoformat_settings
@@ -531,6 +530,13 @@ if isdirectory(expand("~/.vim/plugged/vim-codefmt/"))
       autocmd FileType python AutoFormatBuffer yapf
       " Alternative: autocmd FileType python AutoFormatBuffer autopep8
     augroup END
+endif
+" }
+
+" { Google-Glaive
+if isdirectory(expand("~/.vim/plugged/vim-glaive/"))
+    call glaive#Install()
+    Glaive codefmt plugin[mappings]
 endif
 " }
 " }
