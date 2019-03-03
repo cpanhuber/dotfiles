@@ -530,7 +530,8 @@ if isdirectory(expand("~/.vim/plugged/vim-codefmt/"))
       autocmd FileType java AutoFormatBuffer google-java-format
       autocmd FileType python AutoFormatBuffer yapf
       " Alternative: autocmd FileType python AutoFormatBuffer autopep8
-augroup ENDendif
+    augroup END
+endif
 " }
 " }
 
