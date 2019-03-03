@@ -68,9 +68,9 @@ if filereadable(expand("~/.vim/autoload/plug.vim"))
     Plug 'tikhomirov/vim-glsl'                                               " Syntax highlighting for glsl
     Plug 'bazelbuild/vim-bazel'
     Plug 'google/vim-maktaba'
-    Plugin 'google/vim-codefmt' 
-    Plugin 'google/vim-maktaba'
-    Plugin 'google/vim-glaive'
+    Plug 'google/vim-codefmt' 
+    Plug 'google/vim-maktaba'
+    Plug 'google/vim-glaive'
     call plug#end()
     call glaive#Install()
     Glaive codefmt plugin[mappings]
