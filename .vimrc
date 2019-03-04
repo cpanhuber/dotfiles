@@ -56,19 +56,18 @@ if filereadable(expand("~/.vim/autoload/plug.vim"))
     Plug 'tpope/vim-repeat'                                                  " Repeatable tpope commands
     Plug 'tpope/vim-surround'                                                " Parenthesis commands
     Plug 'tpope/vim-unimpaired'                                              " Pairs of handy bracket mappings
+    Plug 'FaBrand/bazel-compilation-database'
     Plug 'valloric/youcompleteme', {'do' : './install.py --clang-completer'} " Code completion engine!!
     Plug 'vim-airline/vim-airline'                                           " Statusline
     Plug 'vim-airline/vim-airline-themes'                                    " Solarized theme for airline
     Plug 'vim-scripts/argtextobj.vim'                                        " Argument object
     Plug 'vim-scripts/matchit.zip'                                           " Improve % operation
     Plug 'godlygeek/tabular'                                                 " Text alignment
-    Plug 'chenzhiwo/ycm-extra-conf-ros'                                      " Ros Config for ycm
-    Plug 'rdnetto/YCM-Generator', { 'branch': 'stable'}
     Plug 'vim-syntastic/syntastic'                                           " Clang Tidy etc
     Plug 'tikhomirov/vim-glsl'                                               " Syntax highlighting for glsl
     Plug 'bazelbuild/vim-bazel'
     Plug 'google/vim-maktaba'
-    Plug 'google/vim-codefmt' 
+    Plug 'google/vim-codefmt'
     Plug 'google/vim-maktaba'
     Plug 'google/vim-glaive'
     call plug#end()
@@ -422,7 +421,7 @@ if isdirectory(expand("~/.vim/plugged/youcompleteme/"))
     "let g:acp_enableAtStartup = 0
 
     " self explanatory af
-    let g:ycm_collect_identifiers_from_tags_files = 1
+    let g:ycm_collect_identifiers_from_tags_files = 0
     let g:ycm_autoclose_preview_window_after_completion = 1
 
     " remap Ultisnips for compatibility for YCM
@@ -432,7 +431,7 @@ if isdirectory(expand("~/.vim/plugged/youcompleteme/"))
     let g:UltiSnipsJumpBackwardTrigger = '<C-k>'
 
     let g:ycm_register_as_syntastic_checker = 1 "default 1
-    let g:ycm_show_diagnostics_ui = 0
+    let g:ycm_show_diagnostics_ui = 1
 
     " Enable omni completion.
     augroup omniCOMPLETE
@@ -453,9 +452,9 @@ if isdirectory(expand("~/.vim/plugged/youcompleteme/"))
     " accordingly)
 
     " YcmCompleter subcommand mappings
-    noremap <leader>.g :YcmCompleter GoTo<CR>
-    noremap <leader>.f :YcmCompleter FixIt<CR>
-    noremap <leader>.r :YcmCompleter GoToReferences<CR>
+    noremap <leader>gt :YcmCompleter GoTo<CR>
+    noremap <leader>fi :YcmCompleter FixIt<CR>
+    noremap <leader>gtr :YcmCompleter GoToReferences<CR>
     nnoremap <F11> :YcmForceCompileAndDiagnostics <CR>
 
     " Ycm Integration for the vim-ros plugin
@@ -527,7 +526,7 @@ if isdirectory(expand("~/.vim/plugged/vim-codefmt/"))
       autocmd FileType gn AutoFormatBuffer gn
       " autocmd FileType html,css,json AutoFormatBuffer js-beautify
       autocmd FileType java AutoFormatBuffer google-java-format
-      autocmd FileType python AutoFormatBuffer yapf
+      " autocmd FileType python AutoFormatBuffer yapf
       " Alternative: autocmd FileType python AutoFormatBuffer autopep8
     augroup END
 endif
