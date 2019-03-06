@@ -47,3 +47,8 @@ _gen_fzf_default_opts() {
   #"
 }
 _gen_fzf_default_opts
+
+# Don't find symlinks
+# Especially useful that fzf does not got into the bazel-* directories
+export FZF_DEFAULT_COMMAND="find * -path '*/\.*' -prune -o -type f -print -o -type l -o -type d -print 2> /dev/null"
+
