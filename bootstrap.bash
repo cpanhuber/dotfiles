@@ -150,6 +150,26 @@ function prepare_bazel() {
     fi
 }
 
+function install_buildifier() {
+    if ! exists buildifier; then
+        echo "Installing buildifier"
+        install_path=~/.buildifier/bin/buildifier
+        if [ ! -e $(dirname $install_path) ]; then
+            mkdir -p $(dirname $install_path)
+        fi
+
+        #Downloading
+        curl --silent "https://api.github.com/repos/bazelbuild/buildtools/releases/latest" | jq '.assets[] | select( .name == "buildifier" ) | .url' | xargs curl --silent -o $install_path
+        chmod +x $install_path
+
+        #Make it visible
+        buildifier_symlink=~/.local/bin/buildifier
+        if [ ! -e $buildifier_symlink ]; then
+            ln -s ~/.buildifier/bin/buildifier $buildifier_symlink
+        fi
+    fi
+}
+
 function install_packages() {
     # Install usefull packages
     prepare_bazel
@@ -178,6 +198,7 @@ function install_packages() {
         valgrind
         xsel
         zsh
+        jq
     )
 
     echo 'Performing apt-get update'
@@ -189,6 +210,7 @@ function install_packages() {
 
 function install_full() {
     install_packages
+    install_buildifier
     copy_to_home
     install_powerline_fonts
     install_solarized_color_scheme
@@ -197,5 +219,3 @@ function install_full() {
     install_fzf
     setup_catkin_aliases
 }
-
-install_full
