@@ -152,14 +152,13 @@ function ensure_bazel_zsh_completion() {
 
 function ensure_buildifier() {
     echo "Downloading buildifier"
-    install_path=~/.buildifier/bin/buildifier
-    [ -e $(dirname $install_path) ] && rm -rf $(dirname $install_path)
-    mkdir -p $(dirname $install_path)
+    install_path=/opt/buildifier/buildifier
+    sudo rm -rf $(dirname $install_path) 2> /dev/null
+    sudo mkdir -p $(dirname $install_path)
 
     #Downloading
-    curl -fsSL "https://api.github.com/repos/bazelbuild/buildtools/releases/latest" | jq '.assets[] | select( .name == "buildifier" ) | .url' | xargs curl -fsS -o $install_path
-    chmod +x $install_path
-    ls -l $(dirname $install_path)
+    curl -fsSL "https://api.github.com/repos/bazelbuild/buildtools/releases/latest" | jq '.assets[] | select( .name == "buildifier" ) | .browser_download_url' | xargs sudo curl -fsSL -o $install_path
+    sudo chmod +x $install_path
 
     #Make it visible
     buildifier_symlink=/usr/local/bin/buildifier
