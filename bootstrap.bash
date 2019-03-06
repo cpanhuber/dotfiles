@@ -162,9 +162,7 @@ function ensure_buildifier() {
     if ! exists buildifier; then
         echo "Installing buildifier"
         install_path=~/.buildifier/bin/buildifier
-        if [ ! -e $(dirname $install_path) ]; then
-            mkdir -p $(dirname $install_path)
-        fi
+        [ ! -e $(dirname $install_path) ] && mkdir -p $(dirname $install_path)
 
         #Downloading
         curl -fsSL "https://api.github.com/repos/bazelbuild/buildtools/releases/latest" | jq '.assets[] | select( .name == "buildifier" ) | .url' | xargs curl -fsS -o $install_path
@@ -172,9 +170,7 @@ function ensure_buildifier() {
 
         #Make it visible
         buildifier_symlink=~/.local/bin/buildifier
-        if [ ! -e $buildifier_symlink ]; then
-            ln -s ~/.buildifier/bin/buildifier $buildifier_symlink
-        fi
+        [ ! -e $buildifier_symlink ] && ln -s $install_path $buildifier_symlink
     fi
 }
 
