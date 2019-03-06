@@ -20,7 +20,7 @@ function ensure_fzf() {
         echo 'Installing fzf'
         if [ -e $fzf_install_dir ]; then rm -rf $fzf_install_dir; fi
         git clone --depth 1 https://github.com/junegunn/fzf.git $fzf_install_dir -q
-        $fzf_install_dir/install --no-update-rc --key-bindings --completion --no-bash > /dev/null
+        $fzf_install_dir/install --update-rc --key-bindings --completion --no-bash > /dev/null
     fi
 }
 
@@ -65,7 +65,7 @@ function ensure_solarized_color_scheme() {
         echo 'Package dconf-cli required for solarized colors!'
         return -1
     elif [ ! -d $SOLARIZED_INSTALL_DIR ]; then
-        read -p "Have you already defined a new profile in your Terminal preferences e.g. 'SolDark'? If not add it now and continue by pressing the return key..."
+        bash -c 'read -p "Have you already defined a new profile in your Terminal preferences e.g. 'SolDark'? If not add it now and continue by pressing the return key..."'
         echo Install solarized color scheme
         git clone https://github.com/Anthony25/gnome-terminal-colors-solarized.git $SOLARIZED_INSTALL_DIR -q
         $SOLARIZED_INSTALL_DIR/install.sh --install-dircolors
@@ -80,9 +80,9 @@ function ensure_dotfiles() {
         cp .vimrc.local ~/.vimrc.local
     fi
 
-    read -p "Do you want to copy the dotfiles to your home reposory? (This may overwrite some files) Are you sure? (y/n) " -n 1;
+    bash -c 'read -p "Do you want to copy the dotfiles to your home reposory? (This may overwrite some files) Are you sure? (y/[n]) " -n 1;'
     echo "";
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
+    if [[ $REPLY =~ ^[YyZz]$ ]]; then
         rsync --exclude '.git/' \
             --exclude 'bootstrap.bash' \
             --exclude '.vimrc.local' \
@@ -105,12 +105,6 @@ function _patch_git_config() {
 function _patch_zshrc() {
     echo 'Set Theme to bira'
     sed -i 's/^ZSH_THEME.*/ZSH_THEME="bira"/' ~/.zshrc
-
-    if exists fzf; then
-        echo 'Updating fzf'
-        fzf_install_dir=$(dirname $(dirname $(which fzf)))
-        $fzf_install_dir/install --update-rc --key-bindings --completion --no-bash > /dev/null
-    fi
 }
 
 function patch_dotfiles() {
@@ -129,13 +123,11 @@ function ensure_vim_configuration() {
         echo 'vim gnome already installed. Updating vim'
         sudo apt-get update -qq
         sudo apt-get install --only-upgrade -qq -y vim-gnome
-        vim +PlugClean +PlugUpdate +PlugUpgrade +qall
     else
         echo 'Installing vim (huge config)'
         sudo apt-get install -qq vim-gnome
-        vim +PlugClean +PlugInstall +PlugUpdate +PlugUpgrade +qall
     fi
-
+    vim +PlugInstall +PlugUpdate +PlugUpgrade +qall
 }
 
 function ensure_bazel() {
@@ -159,19 +151,19 @@ function ensure_bazel_zsh_completion() {
 }
 
 function ensure_buildifier() {
-    if ! exists buildifier; then
-        echo "Installing buildifier"
-        install_path=~/.buildifier/bin/buildifier
-        [ ! -e $(dirname $install_path) ] && mkdir -p $(dirname $install_path)
+    echo "Downloading buildifier"
+    install_path=~/.buildifier/bin/buildifier
+    [ -e $(dirname $install_path) ] && rm -rf $(dirname $install_path)
+    mkdir -p $(dirname $install_path)
 
-        #Downloading
-        curl -fsSL "https://api.github.com/repos/bazelbuild/buildtools/releases/latest" | jq '.assets[] | select( .name == "buildifier" ) | .url' | xargs curl -fsS -o $install_path
-        chmod +x $install_path
+    #Downloading
+    curl -fsSL "https://api.github.com/repos/bazelbuild/buildtools/releases/latest" | jq '.assets[] | select( .name == "buildifier" ) | .url' | xargs curl -fsS -o $install_path
+    chmod +x $install_path
+    ls -l $(dirname $install_path)
 
-        #Make it visible
-        buildifier_symlink=~/.local/bin/buildifier
-        [ ! -e $buildifier_symlink ] && ln -s $install_path $buildifier_symlink
-    fi
+    #Make it visible
+    buildifier_symlink=/usr/local/bin/buildifier
+    [ ! -e $buildifier_symlink ] && sudo ln -s $install_path $buildifier_symlink
 }
 
 function ensure_packages() {
