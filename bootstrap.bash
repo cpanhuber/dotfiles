@@ -4,40 +4,42 @@ function exists() {
   command -v $1 >/dev/null 2>&1
 }
 
-function setup_catkin_aliases() {
-    export CATKIN_ALIASES=$HOME/.config/catkin/verb_aliases/00-default-aliases.yaml
-    if [ -e "$CATKIN_ALIASES" ]; then
-        echo 'Copying catkin aliases'
-        cp ./catkin_aliases/42-default-aliases.yaml ~/.config/catkin/verb_aliases/
-    fi
+function is_installed() {
+    dpkg-query -W -f='${Status}' $1 | grep 'ok installed' > /dev/null
 }
 
-function install_fzf() {
+function ensure_fzf() {
     # Install a fuzzy file finder for the command line (https://github.com/junegunn/fzf)
     fzf_install_dir=~/.fzf
-    if [ ! -e "$fzf_install_dir" ]; then
+    if exists fzf; then
+        echo 'Updating fzf'
+        fzf_install_dir=$(dirname $(dirname $(which fzf)))
+        git -C $fzf_install_dir pull -q
+        $fzf_install_dir/install --bin > /dev/null
+    else
         echo 'Installing fzf'
-        git clone --depth 1 https://github.com/junegunn/fzf.git $fzf_install_dir
-        cd $fzf_install_dir
-        ./install --all
-        cd -
+        if [ -e $fzf_install_dir ]; then rm -rf $fzf_install_dir; fi
+        git clone --depth 1 https://github.com/junegunn/fzf.git $fzf_install_dir -q
+        $fzf_install_dir/install --no-update-rc --key-bindings --completion --no-bash > /dev/null
     fi
 }
 
-function install_oh_my_zsh() {
+function ensure_oh_my_zsh() {
     export ZSH=$HOME/.oh-my-zsh
 
     if [ ! -e "$ZSH" ]; then
         echo 'Install OhMyZsh'
         # Install my customized oh-my-zsh version
         sh -c "$(curl -fsSL https://raw.githubusercontent.com/FaBrand/oh-my-zsh/master/tools/install.sh)"
+        chsh -s /bin/zsh
+
     else
-        echo 'OhMyZsh already installed - updating config'
-        git -C $ZSH pull
+        echo 'OhMyZsh already installed - updating'
+        sh -c "$(curl -fsSL https://raw.githubusercontent.com/FaBrand/oh-my-zsh/master/tools/upgrade.sh)"
     fi
 }
 
-function install_powerline_fonts() {
+function ensure_powerline_fonts() {
     echo 'Install powerline fonts'
     local POWERLINE_URL='https://github.com/powerline/powerline/raw/develop/font'
     local POWERLINE_SYMBOLS_FILE='PowerlineSymbols.otf'
@@ -57,100 +59,106 @@ function install_powerline_fonts() {
     fi
 }
 
-function install_solarized_color_scheme() {
-    local DIR=~/.solarized
+function ensure_solarized_color_scheme() {
+    local SOLARIZED_INSTALL_DIR=~/.solarized
     if ! exists dconf; then
         echo 'Package dconf-cli required for solarized colors!'
         return -1
-    elif [ ! -d $DIR ]; then
+    elif [ ! -d $SOLARIZED_INSTALL_DIR ]; then
         read -p "Have you already defined a new profile in your Terminal preferences e.g. 'SolDark'? If not add it now and continue by pressing the return key..."
         echo Install solarized color scheme
-        git clone https://github.com/Anthony25/gnome-terminal-colors-solarized.git $DIR
-        cd ~/ && $DIR/install.sh --install-dircolors
-        cd -
+        git clone https://github.com/Anthony25/gnome-terminal-colors-solarized.git $SOLARIZED_INSTALL_DIR -q
+        $SOLARIZED_INSTALL_DIR/install.sh --install-dircolors
     else
         echo 'Solarized theme already installed'
     fi
 }
 
-function copy_to_home() {
-    touch ~/.gitconfig
-    # Check if the extended config is already included
-    grep 'path = ~/.git_settings' ~/.gitconfig > /dev/null
-    if [ ! $? -eq 0 ]; then
-        echo "[include]" >> ~/.gitconfig
-        echo "    path = ~/.git_settings" >> ~/.gitconfig
-    fi
-
+function ensure_dotfiles() {
     # never overwrite existing .vimrc.local
     if [ ! -f ~/.vimrc.local ]; then
         cp .vimrc.local ~/.vimrc.local
     fi
 
-    # Create an initial zshrc.local if it didn't exist
-    if [ ! -f ~/.zshrc.local ]; then
-        cp .zshrc.local ~/.zshrc.local
-    fi
-
     read -p "Do you want to copy the dotfiles to your home reposory? (This may overwrite some files) Are you sure? (y/n) " -n 1;
     echo "";
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        # Move an existing version of zshrc to .zshrc.local
-        if [ -f ~/.zshrc ]; then
-            if [ ! -f ~/.zshrc.local ]; then
-                mv ~/.zshrc ~/.zshrc.local
-                echo "Moved previous zshrc to .zshrc.local"
-                echo "Please remove the zsh configuration specific settings once the editor shows up"
-                sleep 5
-                echo "Opening file with default editor: '$EDITOR'"
-                $EDITOR ~/.zshrc.local
-            else
-                backup_file=~/.zshrc.backup
-                echo "Created backup file '${backup_file}' from existing zshrc file"
-                cp ~/.zshrc $backup_file
-            fi
-        fi
-
-
         rsync --exclude '.git/' \
             --exclude 'bootstrap.bash' \
             --exclude '.vimrc.local' \
-            --exclude '.zshrc.local' \
             --exclude 'README.md' \
             --exclude 'catkin_aliases/*' \
             -avh --no-perms . ~;
     fi
 }
 
-function install_vim_configuration() {
+function _patch_git_config() {
+    echo 'Patch gitconfig to include the Settings'
+    touch ~/.gitconfig
+    grep 'path = ~/.git_settings' ~/.gitconfig > /dev/null
+    if [ ! $? -eq 0 ]; then
+        echo "[include]" >> ~/.gitconfig
+        echo "    path = ~/.git_settings" >> ~/.gitconfig
+    fi
+}
+
+function _patch_zshrc() {
+    echo 'Set Theme to bira'
+    sed -i 's/^ZSH_THEME.*/ZSH_THEME="bira"/' ~/.zshrc
+
+    if exists fzf; then
+        echo 'Updating fzf'
+        fzf_install_dir=$(dirname $(dirname $(which fzf)))
+        $fzf_install_dir/install --update-rc --key-bindings --completion --no-bash > /dev/null
+    fi
+}
+
+function patch_dotfiles() {
+    _patch_zshrc
+    _patch_git_config
+}
+
+function ensure_vim_configuration() {
     # Check vim installation and perform changes if necessary
-    dpkg -s vim-tiny > /dev/null
-    if [ ! $? -eq 1 ]; then
+    if is_installed vim-tiny; then
         echo 'Removing vim-tiny installation'
         sudo apt-get -qq remove vim-tiny
     fi
 
-    dpkg -s vim-gnome > /dev/null
-    if [ $? -eq 1 ]; then
+    if is_installed vim-gnome; then
+        echo 'vim gnome already installed. Updating vim'
+        sudo apt-get update -qq
+        sudo apt-get install --only-upgrade -qq -y vim-gnome
+        vim +PlugClean +PlugUpdate +PlugUpgrade +qall
+    else
         echo 'Installing vim (huge config)'
         sudo apt-get install -qq vim-gnome
         vim +PlugClean +PlugInstall +PlugUpdate +PlugUpgrade +qall
+    fi
+
+}
+
+function ensure_bazel() {
+    if exists bazel; then
+        echo 'Bazel already installed. Upgrading bazel'
+        sudo apt-get update -qq
+        sudo apt-get install --only-upgrade -qq -y bazel
     else
-        echo 'vim gnome already installed. Updating vim'
-        vim +PlugClean +PlugUpdate +PlugUpgrade +qall
-    fi
-
-}
-
-function prepare_bazel() {
-    dpkg -s bazel > /dev/null
-    if [ $? -eq 1 ]; then
-        echo "deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
-        curl https://bazel.build/bazel-release.pub.gpg | sudo apt-key add -
+        echo "Installing bazel"
+        echo "deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list > /dev/null
+        curl --silent https://bazel.build/bazel-release.pub.gpg | sudo apt-key add -
+        sudo apt-get update -qq
+        sudo apt-get install -qq -y bazel
     fi
 }
 
-function install_buildifier() {
+function ensure_bazel_zsh_completion() {
+    zsh_completion_dir=~/.zsh/completion
+    [ -f $zsh_completion_dir ] && mkdir $zsh_completion_dir
+    curl -fsSL "https://raw.githubusercontent.com/bazelbuild/bazel/master/scripts/zsh_completion/_bazel" -o $zsh_completion_dir/_bazel
+}
+
+function ensure_buildifier() {
     if ! exists buildifier; then
         echo "Installing buildifier"
         install_path=~/.buildifier/bin/buildifier
@@ -159,7 +167,7 @@ function install_buildifier() {
         fi
 
         #Downloading
-        curl --silent "https://api.github.com/repos/bazelbuild/buildtools/releases/latest" | jq '.assets[] | select( .name == "buildifier" ) | .url' | xargs curl --silent -o $install_path
+        curl -fsSL "https://api.github.com/repos/bazelbuild/buildtools/releases/latest" | jq '.assets[] | select( .name == "buildifier" ) | .url' | xargs curl -fsS -o $install_path
         chmod +x $install_path
 
         #Make it visible
@@ -170,11 +178,9 @@ function install_buildifier() {
     fi
 }
 
-function install_packages() {
+function ensure_packages() {
     # Install usefull packages
-    prepare_bazel
     packages=(
-        bazel
         build-essential
         clang-format
         clang-tidy
@@ -209,13 +215,14 @@ function install_packages() {
 }
 
 function install_full() {
-    install_packages
-    install_buildifier
-    copy_to_home
-    install_powerline_fonts
-    install_solarized_color_scheme
-    install_oh_my_zsh
-    install_vim_configuration
-    install_fzf
-    setup_catkin_aliases
+    ensure_packages
+    ensure_powerline_fonts
+    ensure_solarized_color_scheme
+    ensure_oh_my_zsh
+    ensure_fzf
+    ensure_vim_configuration
+    ensure_bazel
+    ensure_buildifier
+    ensure_dotfiles
+    patch_dotfiles
 }
