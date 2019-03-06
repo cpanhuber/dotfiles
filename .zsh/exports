@@ -33,22 +33,28 @@ _gen_fzf_default_opts() {
   local cyan="37"
   local green="64"
 
-  # Comment and uncomment below for the light theme.
-
   # Solarized Dark color scheme for fzf
   export FZF_DEFAULT_OPTS="
     --color fg:-1,bg:-1,hl:$blue,fg+:$base2,bg+:$base02,hl+:$blue
     --color info:$yellow,prompt:$yellow,pointer:$base3,marker:$base3,spinner:$yellow
   "
-  ## Solarized Light color scheme for fzf
-  #export FZF_DEFAULT_OPTS="
-  #  --color fg:-1,bg:-1,hl:$blue,fg+:$base02,bg+:$base2,hl+:$blue
-  #  --color info:$yellow,prompt:$yellow,pointer:$base03,marker:$base03,spinner:$yellow
-  #"
 }
 _gen_fzf_default_opts
 
 # Don't find symlinks
 # Especially useful that fzf does not got into the bazel-* directories
-export FZF_DEFAULT_COMMAND="find * -path '*/\.*' -prune -o -type f -print -o -type l -o -type d -print 2> /dev/null"
+export FZF_DEFAULT_COMMAND="find * -path '*/\.*' -prune -o -type f -print -o -type d -print 2> /dev/null"
 
+
+# Some wrappers for entr for writing less boilerplate
+function fentr(){
+    find $1 -path '*/\.*' -prune -o -type f -print -o -type d -print | entr -cd ${@:2}
+}
+
+function fentrl() {
+    while [ true ]; do
+        fentr $@
+        # End the loop with SIGINT (Ctrl+c)
+        [ $? -eq 130 ] && break;
+    done
+}
