@@ -1,7 +1,7 @@
 " Modeline and Notes {
 " vim: set sw=4 ts=4 sts=4 et tw=78 foldmarker={,} foldlevel=0 foldmethod=marker spell:
 "
-"   This is the personal .vimrc file of Dominik.Drexl@bmw.de
+"   This is a personal vimrc configuration.
 "   Everything is free for you to copy, but make sure you want and understand
 "   the parts you pick. If you just want to add or overwrite something, I
 "   recommend putting it in ~/.vimrc.local
@@ -41,35 +41,34 @@ endif
 if filereadable(expand("~/.vim/autoload/plug.vim"))
     call plug#begin('~/.vim/plugged')
     Plug 'altercation/vim-colors-solarized'                                  " Colorscheme
+    Plug 'bazelbuild/vim-bazel'                                              " Some bazel integration in vim
     Plug 'christoomey/vim-tmux-navigator'                                    " Seamless vim and tmux split navigation
     Plug 'ctrlpvim/ctrlp.vim'                                                " Fuzzy file opener
     Plug 'easymotion/vim-easymotion'                                         " Speed of light motion
+    Plug 'godlygeek/tabular'                                                 " Text alignment
+    Plug 'google/vim-codefmt'                                                " Lot's of formatters
+    Plug 'google/vim-glaive'                                                 " Requirements of vim-codefmt
+    Plug 'google/vim-maktaba'                                                " Requirements of vim-codefmt
     Plug 'majutsushi/tagbar'                                                 " Tags in sidebar
     Plug 'mbbill/undotree'                                                   " Undo sidebar
     Plug 'michaeljsmith/vim-indent-object'                                   " Indent object
     Plug 'rhysd/vim-clang-format', { 'for': 'cpp' }                          " c++ formatting
     Plug 'scrooloose/nerdtree', { 'on': 'NERDTreeToggle' }                   " File browser sidebar
     Plug 'sirver/ultisnips'                                                  " Code snippets
-    Plug 'FaBrand/vim-snippets'                                                " Code snippets
+    Plug 'tikhomirov/vim-glsl'                                               " Syntax highlighting for glsl
     Plug 'tpope/vim-commentary'                                              " Code commenting
     Plug 'tpope/vim-fugitive'                                                " Git in Vim!!
     Plug 'tpope/vim-repeat'                                                  " Repeatable tpope commands
     Plug 'tpope/vim-surround'                                                " Parenthesis commands
     Plug 'tpope/vim-unimpaired'                                              " Pairs of handy bracket mappings
-    Plug 'FaBrand/bazel-compilation-database'
     Plug 'valloric/youcompleteme', {'do' : './install.py --clang-completer'} " Code completion engine!!
     Plug 'vim-airline/vim-airline'                                           " Statusline
     Plug 'vim-airline/vim-airline-themes'                                    " Solarized theme for airline
     Plug 'vim-scripts/argtextobj.vim'                                        " Argument object
     Plug 'vim-scripts/matchit.zip'                                           " Improve % operation
-    Plug 'godlygeek/tabular'                                                 " Text alignment
     Plug 'vim-syntastic/syntastic'                                           " Clang Tidy etc
-    Plug 'tikhomirov/vim-glsl'                                               " Syntax highlighting for glsl
-    Plug 'bazelbuild/vim-bazel'
-    Plug 'google/vim-maktaba'
-    Plug 'google/vim-codefmt'
-    Plug 'google/vim-maktaba'
-    Plug 'google/vim-glaive'
+    Plug 'FaBrand/bazel-compilation-database'                                " Fork - Automatic Use ycm for bazel projects
+    Plug 'FaBrand/vim-snippets'                                              " Fork - Code snippets
     call plug#end()
 endif
 " }
@@ -447,22 +446,12 @@ if isdirectory(expand("~/.vim/plugged/youcompleteme/"))
     " c lang family completion
     let g:ycm_confirm_extra_conf = 0
 
-    " The extra configuration is handled by the extra extra
-    " ycm-extra-conf-ros plugin (ycm_global_extra_conf is set there
-    " accordingly)
-
     " YcmCompleter subcommand mappings
     noremap <leader>gt :YcmCompleter GoTo<CR>
     noremap <leader>fi :YcmCompleter FixIt<CR>
     noremap <leader>gtr :YcmCompleter GoToReferences<CR>
     nnoremap <F11> :YcmForceCompileAndDiagnostics <CR>
 
-    " Ycm Integration for the vim-ros plugin
-
-    let g:ycm_semantic_triggers = {
-                \   'roslaunch' : ['="', '$(', '/'],
-                \   'rosmsg,rossrv,rosaction' : ['re!^', '/'],
-                \ }
 endif
 " }
 
@@ -490,7 +479,7 @@ endif
 " Clang Format {
 if isdirectory(expand("~/.vim/plugged/vim-clang-format/"))
     let g:clang_format#detect_style_file = 1
-    let g:clang_format#command = 'clang-format-5.0'
+    let g:clang_format#command = 'clang-format-6.0'
 
     augroup clangFMT
         autocmd FileType cpp let g:clang_format#auto_format = 1
@@ -527,7 +516,7 @@ if isdirectory(expand("~/.vim/plugged/vim-codefmt/"))
       " autocmd FileType html,css,json AutoFormatBuffer js-beautify
       autocmd FileType java AutoFormatBuffer google-java-format
       " autocmd FileType python AutoFormatBuffer yapf
-      " Alternative: autocmd FileType python AutoFormatBuffer autopep8
+      autocmd FileType python AutoFormatBuffer autopep8
     augroup END
 endif
 " }

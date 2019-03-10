@@ -1,4 +1,4 @@
-# My linux dotfiles for vim, tmux and bash
+# My linux dotfiles for vim, tmux and zsh
 
 **Warning:** If you want to give these dotfiles a try, you should first fork
 this repository, review the code, and remove things you don’t want or need.
