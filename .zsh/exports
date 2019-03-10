@@ -1,3 +1,4 @@
+# vi: ft=zsh
 #!/usr/bin/env zsh
 
 # Make vim the default editor.
@@ -58,3 +59,10 @@ function fentrl() {
         [ $? -eq 130 ] && break;
     done
 }
+
+
+# Enable completion for bazel
+# according to https://docs.bazel.build/versions/master/completion.html#zsh-completion
+fpath[1,0]=~/.zsh/completion/
+zstyle ':completion:*' use-cache on
+zstyle ':completion:*' cache-path ~/.zsh/cache
