@@ -144,14 +144,6 @@ function ensure_bazel() {
     fi
 }
 
-function ensure_bazel_zsh_completion() {
-    zsh_completion_dir=~/.zsh/completion
-    [ -f $zsh_completion_dir ] && mkdir $zsh_completion_dir
-    curl -fsSL "https://raw.githubusercontent.com/bazelbuild/bazel/master/scripts/zsh_completion/_bazel" -o $zsh_completion_dir/_bazel
-    # Run this here to initialize the zsh completion with the added bazel completions
-    zsh -c 'source ~/.zshrc; fpath[1,0]=~/.zsh/completion/; rm -f $HOME/.zcompdump; compinit'
-}
-
 function ensure_buildifier() {
     echo "Downloading buildifier"
     install_path=/opt/buildifier/buildifier
