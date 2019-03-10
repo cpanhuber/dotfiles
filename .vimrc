@@ -196,9 +196,13 @@ set matchpairs+=<:>             " Match, to be used with %
 set pastetoggle=<F12>           " pastetoggle (sane indentation on pastes)
 " Remove trailing whitespaces and ^M chars
 augroup stripWHITESPACE
-    autocmd FileType c,cpp,python,xml,yml,cmake,sh,bash,py,gitcommit,yaml,glsl,bzl autocmd BufWritePre <buffer> call StripTrailingWhitespace()
+    autocmd FileType vim,c,cpp,python,xml,yml,cmake,sh,bash,py,gitcommit,yaml,glsl,bzl autocmd BufWritePre <buffer> call StripTrailingWhitespace()
 augroup END
 let python_highlight_all = 1
+" File specific mappings {
+    autocmd FileType bzl setlocal shiftwidth=2 tabstop=2 softtabstop=2
+    autocmd FileType yml setlocal shiftwidth=2 tabstop=2 softtabstop=2
+" }
 " }
 
 " Key Mappings {
