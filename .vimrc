@@ -303,7 +303,7 @@ nnoremap <silent> <leader>cq :cexpr []<CR>
 if isdirectory(expand("~/.vim/plugged/vim-commentary"))
     augroup commentSTRING
         autocmd FileType c,cpp,cs,java setlocal commentstring=//\ %s
-        autocmd FileType yaml,cmake setlocal commentstring=#\ %s
+        autocmd FileType yaml,cmake,zsh setlocal commentstring=#\ %s
     augroup END
 endif
 " }
