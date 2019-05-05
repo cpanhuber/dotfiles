@@ -46,15 +46,31 @@ _gen_fzf_default_opts
 # Especially useful that fzf does not got into the bazel-* directories
 export FZF_DEFAULT_COMMAND="find * -path '*/\.*' -prune -o -type f -print -o -type d -print 2> /dev/null"
 
+function fbzl(){
+    find $1 -path '*/\.*' -prune -o -type f -a \( -name 'BUILD' -o -name '*\.bzl' -o -name 'WORKSPACE' -o -name '*\.BUILD' \) -print
+}
+
+# Some wrappers for entr for writing less boilerplate
+function fent(){
+   fbzl $1  | entr -cd ${@:2}
+}
 
 # Some wrappers for entr for writing less boilerplate
 function fentr(){
-    find $1 -path '*/\.*' -prune -o -type f -print -o -type d -print | entr -cd ${@:2}
+    find $1 -path '*/\.*' -prune -o -type f -o -type d -print | entr -cd ${@:2}
 }
 
 function fentrl() {
     while [ true ]; do
         fentr $@
+        # End the loop with SIGINT (Ctrl+c)
+        [ $? -eq 130 ] && break;
+    done
+}
+
+function fentl() {
+    while [ true ]; do
+        fent $@
         # End the loop with SIGINT (Ctrl+c)
         [ $? -eq 130 ] && break;
     done
