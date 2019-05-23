@@ -67,7 +67,7 @@ if filereadable(expand("~/.vim/autoload/plug.vim"))
     Plug 'vim-scripts/argtextobj.vim'                                        " Argument object
     Plug 'vim-scripts/matchit.zip'                                           " Improve % operation
     Plug 'vim-syntastic/syntastic'                                           " Clang Tidy etc
-    Plug 'FaBrand/bazel-compilation-database'                                " Fork - Automatic Use ycm for bazel projects
+    Plug 'grailbio/bazel-compilation-database'                                " Fork - Automatic Use ycm for bazel projects
     Plug 'FaBrand/vim-snippets'                                              " Fork - Code snippets
     call plug#end()
 endif
@@ -343,6 +343,7 @@ if isdirectory(expand("~/.vim/plugged/tabular"))
     vmap <Leader>a,, :Tabularize /,\zs<CR>
     nmap <Leader>a" :Tabularize /"<CR>
     vmap <Leader>a" :Tabularize /"<CR>
+    vmap <Leader>a" :Tabularize /-<CR>
     nmap <Leader>a<Bar> :Tabularize /<Bar><CR>
     vmap <Leader>a<Bar> :Tabularize /<Bar><CR>
 endif
@@ -416,7 +417,7 @@ endif
 nnoremap <silent> <leader>ue :UltiSnipsEdit<CR>
 " Open Snippet edit as split
 let g:UltiSnipsEditSplit="vertical"
-let g:UltiSnipsSnippetDirectories = ['~/.vim/plugged/ultisnips/UltiSnips', 'UltiSnips']
+let g:UltiSnipsSnippetDirectories = ['~/.vim/plugged/vim-snippets/UltiSnips', '~/.vim/plugged/ultisnips/UltiSnips', 'UltiSnips']
 " }
 
 " YouCompleteMe {
