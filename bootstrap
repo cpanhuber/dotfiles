@@ -1,11 +1,11 @@
 #!/bin/bash
 
 function exists() {
-  command -v $1 >/dev/null 2>&1
+  command -v "${1}" >/dev/null 2>&1
 }
 
 function is_installed() {
-    dpkg-query -W -f='${Status}' $1 | grep 'ok installed' > /dev/null
+    dpkg-query -W -f='${Status}' "${1}" | grep 'ok installed' > /dev/null
 }
 
 function ensure_fzf() {
@@ -13,14 +13,14 @@ function ensure_fzf() {
     fzf_install_dir=~/.fzf
     if exists fzf; then
         echo 'Updating fzf'
-        fzf_install_dir=$(dirname $(dirname $(which fzf)))
-        git -C $fzf_install_dir pull -q
-        $fzf_install_dir/install --bin > /dev/null
+        fzf_install_dir="$(dirname "$(dirname "$(which fzf)")")"
+        git -C "${fzf_install_dir}" pull -q
+        "${fzf_install_dir}"/install --bin > /dev/null
     else
         echo 'Installing fzf'
-        if [ -e $fzf_install_dir ]; then rm -rf $fzf_install_dir; fi
-        git clone --depth 1 https://github.com/junegunn/fzf.git $fzf_install_dir -q
-        $fzf_install_dir/install --update-rc --key-bindings --completion --no-bash > /dev/null
+        if [ -e "${fzf_install_dir}" ]; then rm -rf "${fzf_install_dir}"; fi
+        git clone --depth 1 https://github.com/junegunn/fzf.git "${fzf_install_dir}" -q
+        "${fzf_install_dir}"/install --update-rc --key-bindings --completion --no-bash > /dev/null
     fi
 }
 
@@ -63,9 +63,9 @@ function ensure_solarized_color_scheme() {
     local SOLARIZED_INSTALL_DIR=~/.solarized
     if ! exists dconf; then
         echo 'Package dconf-cli required for solarized colors!'
-        return -1
+        return 1
     elif [ ! -d $SOLARIZED_INSTALL_DIR ]; then
-        bash -c 'read -p "Have you already defined a new profile in your Terminal preferences e.g. 'SolDark'? If not add it now and continue by pressing the return key..."'
+        bash -c 'read -p "Have you already defined a new profile in your Terminal preferences e.g. '"'SolDark'"' If not add it now and continue by pressing the return key..."'
         echo Install solarized color scheme
         git clone https://github.com/Anthony25/gnome-terminal-colors-solarized.git $SOLARIZED_INSTALL_DIR -q
         $SOLARIZED_INSTALL_DIR/install.sh --install-dircolors
@@ -95,8 +95,8 @@ function ensure_dotfiles() {
 function _patch_git_config() {
     echo 'Patch gitconfig to include the Settings'
     touch ~/.gitconfig
-    grep 'path = ~/.git_settings' ~/.gitconfig > /dev/null
-    if [ ! $? -eq 0 ]; then
+
+    if ! grep 'path = ~/.git_settings' ~/.gitconfig > /dev/null ; then
         echo "[include]" >> ~/.gitconfig
         echo "    path = ~/.git_settings" >> ~/.gitconfig
     fi
@@ -147,8 +147,8 @@ function ensure_bazel() {
 function ensure_buildifier() {
     echo "Downloading buildifier"
     install_path=/opt/buildifier/buildifier
-    sudo rm -rf $(dirname $install_path) 2> /dev/null
-    sudo mkdir -p $(dirname $install_path)
+    sudo rm -rf "$(dirname ${install_path})" 2> /dev/null
+    sudo mkdir -p "$(dirname ${install_path})"
 
     #Downloading
     curl -fsSL "https://api.github.com/repos/bazelbuild/buildtools/releases/latest" | jq '.assets[] | select( .name == "buildifier" ) | .browser_download_url' | xargs sudo curl -fsSL -o $install_path
@@ -193,7 +193,7 @@ function ensure_packages() {
     sudo apt-get -qq update
 
     echo "Installing items"
-    echo ${packages[*]} | xargs sudo apt install --assume-yes
+    echo "${packages[*]}" | xargs sudo apt install --assume-yes
 }
 
 function install_full() {
