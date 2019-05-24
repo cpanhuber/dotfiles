@@ -176,7 +176,9 @@ function ensure_packages() {
         jq
         meld
         nmon
+        python-autopep8
         python-dev
+        python-yapf
         python3-dev
         rsync
         shellcheck
