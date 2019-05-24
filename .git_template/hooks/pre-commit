@@ -1,3 +1,3 @@
 #!/bin/sh
-.git/hooks/clang-check
+${GIT_DIR}/hooks/clang-check
 #>/dev/null 2>&1 &

@@ -2,7 +2,7 @@
 
 git diff --cached --name-only --diff-filter=ACMRT \
     | ag . --cpp -l \
-    | xargs -n 1 clang-format-5.0 -style=file -fallback-style=None -sort-includes -output-replacements-xml \
+    | xargs -n 1 clang-format-6.0 -style=file -fallback-style=None -sort-includes -output-replacements-xml \
     | grep "<replacement " > /dev/null
 
 if [ $? -ne 1 ]
