@@ -18,7 +18,7 @@ There are also some tweaks that enable colors in the terminal.
 
 ```bash
 git clone git@github.com:FaBrand/dotfiles.git ~/dotfiles
-source ~/dotfiles/bootstrap.bash && install_full
+source ~/dotfiles/bootstrap && install_full
 ```
 
 ## Known Problems
