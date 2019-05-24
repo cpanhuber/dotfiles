@@ -280,7 +280,8 @@ vnoremap . :normal .<CR>
 cmap w!! w !sudo tee % >/dev/null
 
 " Adjust viewports to the same size
-nnoremap <Leader>= <C-w>=
+" FIXME: Is also linked by maktaba
+" nnoremap <Leader>= <C-w>=
 
 " Map <Leader>ff to display all lines with keyword under cursor
 " and ask which one to jump to
