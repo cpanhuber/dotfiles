@@ -169,9 +169,11 @@ function ensure_packages() {
         cppcheck
         curl
         dconf-cli
+        entr
         exuberant-ctags
         git
         htop
+        jq
         meld
         nmon
         python-dev
@@ -185,7 +187,6 @@ function ensure_packages() {
         valgrind
         xsel
         zsh
-        jq
     )
 
     echo 'Performing apt-get update'
