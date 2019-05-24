@@ -40,6 +40,7 @@ endif
 
 if filereadable(expand("~/.vim/autoload/plug.vim"))
     call plug#begin('~/.vim/plugged')
+    Plug 'FaBrand/vim-snippets'                                              " Fork - Code snippets
     Plug 'altercation/vim-colors-solarized'                                  " Colorscheme
     Plug 'bazelbuild/vim-bazel'                                              " Some bazel integration in vim
     Plug 'christoomey/vim-tmux-navigator'                                    " Seamless vim and tmux split navigation
@@ -49,10 +50,11 @@ if filereadable(expand("~/.vim/autoload/plug.vim"))
     Plug 'google/vim-codefmt'                                                " Lot's of formatters
     Plug 'google/vim-glaive'                                                 " Requirements of vim-codefmt
     Plug 'google/vim-maktaba'                                                " Requirements of vim-codefmt
+    Plug 'grailbio/bazel-compilation-database'                               " Fork - Automatic Use ycm for bazel projects
     Plug 'majutsushi/tagbar'                                                 " Tags in sidebar
     Plug 'mbbill/undotree'                                                   " Undo sidebar
     Plug 'michaeljsmith/vim-indent-object'                                   " Indent object
-    Plug 'rhysd/vim-clang-format', { 'for': 'cpp' }                          " c++ formatting
+    Plug 'rhysd/vim-clang-format', { 'for': ['c', 'cpp'] }                   " c++ formatting
     Plug 'scrooloose/nerdtree', { 'on': 'NERDTreeToggle' }                   " File browser sidebar
     Plug 'sirver/ultisnips'                                                  " Code snippets
     Plug 'tikhomirov/vim-glsl'                                               " Syntax highlighting for glsl
@@ -67,8 +69,6 @@ if filereadable(expand("~/.vim/autoload/plug.vim"))
     Plug 'vim-scripts/argtextobj.vim'                                        " Argument object
     Plug 'vim-scripts/matchit.zip'                                           " Improve % operation
     Plug 'vim-syntastic/syntastic'                                           " Clang Tidy etc
-    Plug 'grailbio/bazel-compilation-database'                                " Fork - Automatic Use ycm for bazel projects
-    Plug 'FaBrand/vim-snippets'                                              " Fork - Code snippets
     call plug#end()
 endif
 " }
@@ -198,6 +198,7 @@ set pastetoggle=<F12>           " pastetoggle (sane indentation on pastes)
 augroup stripWHITESPACE
     autocmd FileType vim,c,cpp,python,xml,yml,cmake,sh,bash,py,gitcommit,yaml,glsl,bzl autocmd BufWritePre <buffer> call StripTrailingWhitespace()
 augroup END
+
 let python_highlight_all = 1
 " File specific mappings {
     autocmd FileType bzl setlocal shiftwidth=2 tabstop=2 softtabstop=2
@@ -279,7 +280,7 @@ vnoremap . :normal .<CR>
 cmap w!! w !sudo tee % >/dev/null
 
 " Adjust viewports to the same size
-" nnoremap <Leader>= <C-w>=
+nnoremap <Leader>= <C-w>=
 
 " Map <Leader>ff to display all lines with keyword under cursor
 " and ask which one to jump to
@@ -425,7 +426,7 @@ if isdirectory(expand("~/.vim/plugged/youcompleteme/"))
     "let g:acp_enableAtStartup = 0
 
     " self explanatory af
-    let g:ycm_collect_identifiers_from_tags_files = 0
+    let g:ycm_collect_identifiers_from_tags_files = 1
     let g:ycm_autoclose_preview_window_after_completion = 1
 
     " remap Ultisnips for compatibility for YCM
@@ -456,7 +457,6 @@ if isdirectory(expand("~/.vim/plugged/youcompleteme/"))
     noremap <leader>fi :YcmCompleter FixIt<CR>
     noremap <leader>gtr :YcmCompleter GoToReferences<CR>
     nnoremap <F11> :YcmForceCompileAndDiagnostics <CR>
-
 endif
 " }
 
@@ -487,6 +487,7 @@ if isdirectory(expand("~/.vim/plugged/vim-clang-format/"))
     let g:clang_format#command = 'clang-format-6.0'
 
     augroup clangFMT
+        autocmd FileType c,cpp let g:clang_format#auto_format = 1
         autocmd FileType cpp let g:clang_format#auto_format = 1
     augroup END
 endif
