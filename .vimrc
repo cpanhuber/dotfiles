@@ -502,6 +502,8 @@ if isdirectory(expand("~/.vim/plugged/syntastic/"))
     let g:syntastic_cpp_checkers = ['clang_tidy']
     let g:syntastic_cpp_clang_tidy_args = "-checks=readability-*,cppcoreguidelines-* -std=c++14"
     let g:syntastic_python_checkers = ['pylint']
+    let g:syntastic_yaml_checkers = ['yamllint']
+    let g:syntastic_sh_checkers = ['shellcheck']
 endif
 " }
 
