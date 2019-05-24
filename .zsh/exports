@@ -39,12 +39,13 @@ _gen_fzf_default_opts() {
     --color fg:-1,bg:-1,hl:$blue,fg+:$base2,bg+:$base02,hl+:$blue
     --color info:$yellow,prompt:$yellow,pointer:$base3,marker:$base3,spinner:$yellow
   "
+  export FZF_DEFAULT_COMMAND="find * -path '*/\.*' -prune -o -type f -print -o -type d -print 2> /dev/null"
+  # Don't find symlinks
+  # Especially useful that fzf does not got into the bazel-* directories
+  export FZF_CTRL_T_COMMAND="find * -path '*/\.*' -prune -o -type f -print -o -type l -o -type d -print 2> /dev/null"
 }
 _gen_fzf_default_opts
 
-# Don't find symlinks
-# Especially useful that fzf does not got into the bazel-* directories
-export FZF_DEFAULT_COMMAND="find * -path '*/\.*' -prune -o -type f -print -o -type d -print 2> /dev/null"
 
 function fbzl(){
     find $1 -path '*/\.*' -prune -o -type f -a \( -name 'BUILD' -o -name '*\.bzl' -o -name 'WORKSPACE' -o -name '*\.BUILD' \) -print
@@ -73,5 +74,12 @@ function fentl() {
         fent $@
         # End the loop with SIGINT (Ctrl+c)
         [ $? -eq 130 ] && break;
+    done
+}
+
+function gitignore() {
+    for i in "$@"; do
+        echo "Now ignoring $i"
+        echo $i >> ~/.gitignore
     done
 }

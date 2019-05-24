@@ -69,3 +69,5 @@ alias a='git adog'
 alias cm='git checkout master'
 alias gp='git pull'
 alias thefuck='fuck'
+alias bag="ag -G'(.*\.)?BUILD(\..*)?|.*\.bzl|.*\.bazel|(.*\.)?WORKSPACE(\..*)?|(\.?bazel(ignore|rc))'"
+alias ag='ag --path-to-ignore ~/.agignore'
