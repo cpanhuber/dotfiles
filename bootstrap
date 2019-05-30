@@ -210,6 +210,5 @@ function install_full() {
     ensure_bazel
     ensure_buildifier
     ensure_dotfiles
-    ensure_bazel_zsh_completion
     patch_dotfiles
 }
