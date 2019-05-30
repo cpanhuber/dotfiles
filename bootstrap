@@ -205,10 +205,10 @@ function install_full() {
     ensure_powerline_fonts
     ensure_solarized_color_scheme
     ensure_oh_my_zsh
+    ensure_dotfiles
+    patch_dotfiles
     ensure_fzf
     ensure_vim_configuration
     ensure_bazel
     ensure_buildifier
-    ensure_dotfiles
-    patch_dotfiles
 }
