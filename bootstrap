@@ -130,20 +130,6 @@ function ensure_vim_configuration() {
     vim +PlugInstall +PlugUpdate +PlugUpgrade +qall
 }
 
-function ensure_bazel() {
-    if exists bazel; then
-        echo 'Bazel already installed. Upgrading bazel'
-        sudo apt-get update -qq
-        sudo apt-get install --only-upgrade -qq -y bazel
-    else
-        echo "Installing bazel"
-        echo "deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list > /dev/null
-        curl --silent https://bazel.build/bazel-release.pub.gpg | sudo apt-key add -
-        sudo apt-get update -qq
-        sudo apt-get install -qq -y bazel
-    fi
-}
-
 function ensure_buildifier() {
     echo "Downloading buildifier"
     install_path=/opt/buildifier/buildifier
@@ -155,8 +141,8 @@ function ensure_buildifier() {
     sudo chmod +x $install_path
 
     #Make it visible
-    buildifier_symlink=/usr/local/bin/buildifier
-    [ ! -e $buildifier_symlink ] && sudo ln -s $install_path $buildifier_symlink
+    symlink=/usr/local/bin/buildifier
+    [ ! -e $symlink ] && sudo ln -s $install_path $symlink
 }
 
 function ensure_buildozer() {
@@ -170,8 +156,30 @@ function ensure_buildozer() {
     sudo chmod +x $install_path
 
     #Make it visible
-    buildozer_symlink=/usr/local/bin/buildozer
-    [ ! -e $buildozer_symlink ] && sudo ln -s $install_path $buildozer_symlink
+    symlink=/usr/local/bin/buildozer
+    [ ! -e $symlink ] && sudo ln -s $install_path $symlink
+}
+
+function ensure_bazelisk() {
+    if is_installed bazel; then
+        echo 'Removing bazel installation'
+        sudo apt-get -qq remove bazel
+    fi
+
+    echo "Downloading bazelisk"
+    install_path=/opt/bazelisk/bazelisk
+    sudo rm -rf "$(dirname ${install_path})" 2> /dev/null
+    sudo mkdir -p "$(dirname ${install_path})"
+
+    #Downloading
+    curl -fsSL "https://api.github.com/repos/bazelbuild/bazelisk/releases/latest" | jq '.assets[] | select( .name == "bazelisk-linux-amd64" ) | .browser_download_url' | xargs sudo curl -fsSL -o $install_path
+    sudo chmod +x $install_path
+
+    #Make it visible
+    symlink=/usr/local/bin/bazelisk
+    [ ! -e $symlink ] && sudo ln -s $install_path $symlink
+    bazelisk_symlink=/usr/local/bin/bazel
+    [ ! -e $bazelisk_symlink ] && sudo ln -s $symlink $bazelisk_symlink
 }
 
 function ensure_packages() {
@@ -224,7 +232,7 @@ function install_full() {
     patch_dotfiles
     ensure_fzf
     ensure_vim_configuration
-    ensure_bazel
     ensure_buildifier
     ensure_buildozer
+    ensure_bazelisk
 }
