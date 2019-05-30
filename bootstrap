@@ -159,6 +159,21 @@ function ensure_buildifier() {
     [ ! -e $buildifier_symlink ] && sudo ln -s $install_path $buildifier_symlink
 }
 
+function ensure_buildozer() {
+    echo "Downloading buildozer"
+    install_path=/opt/buildozer/buildozer
+    sudo rm -rf "$(dirname ${install_path})" 2> /dev/null
+    sudo mkdir -p "$(dirname ${install_path})"
+
+    #Downloading
+    curl -fsSL "https://api.github.com/repos/bazelbuild/buildtools/releases/latest" | jq '.assets[] | select( .name == "buildozer" ) | .browser_download_url' | xargs sudo curl -fsSL -o $install_path
+    sudo chmod +x $install_path
+
+    #Make it visible
+    buildozer_symlink=/usr/local/bin/buildozer
+    [ ! -e $buildozer_symlink ] && sudo ln -s $install_path $buildozer_symlink
+}
+
 function ensure_packages() {
     # Install usefull packages
     packages=(
@@ -211,4 +226,5 @@ function install_full() {
     ensure_vim_configuration
     ensure_bazel
     ensure_buildifier
+    ensure_buildozer
 }
