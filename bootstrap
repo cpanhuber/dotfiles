@@ -80,14 +80,16 @@ function ensure_dotfiles() {
         cp .vimrc.local ~/.vimrc.local
     fi
 
-    bash -c 'read -p "Do you want to copy the dotfiles to your home reposory? (This may overwrite some files) Are you sure? (y/[n]) " -n 1;'
-    echo "";
-    if [[ $REPLY =~ ^[YyZz]$ ]]; then
+    echo "Do you want to copy the dotfiles to your home reposory?"
+    echo "(This may overwrite some files) Are you sure? (y/[n]) ";
+    read -rn reply
+    if [[ ${reply} =~ ^[YyZz]$ ]]; then
         rsync --exclude '.git/' \
-            --exclude 'bootstrap.bash' \
+            --exclude 'bootstrap' \
             --exclude '.vimrc.local' \
             --exclude 'README.md' \
             --exclude 'catkin_aliases/*' \
+            --exclude 'dircolors' \
             -avh --no-perms . ~;
     fi
 }
