@@ -82,7 +82,7 @@ function ensure_dotfiles() {
 
     echo "Do you want to copy the dotfiles to your home reposory?"
     echo "(This may overwrite some files) Are you sure? (y/[n]) ";
-    read -rn reply
+    read -r reply
     if [[ ${reply} =~ ^[YyZz]$ ]]; then
         rsync --exclude '.git/' \
             --exclude 'bootstrap' \
@@ -121,13 +121,13 @@ function ensure_vim_configuration() {
         sudo apt-get -qq remove vim-tiny
     fi
 
-    if is_installed vim-gnome; then
+    if is_installed vim-gtk3; then
         echo 'vim gnome already installed. Updating vim'
         sudo apt-get update -qq
-        sudo apt-get install --only-upgrade -qq -y vim-gnome
+        sudo apt-get install --only-upgrade -qq -y vim-gtk3
     else
         echo 'Installing vim (huge config)'
-        sudo apt-get install -qq vim-gnome
+        sudo apt-get install -qq vim-gtk3
     fi
     vim +PlugInstall +PlugUpdate +PlugUpgrade +qall
 }
@@ -201,9 +201,8 @@ function ensure_packages() {
         jq
         meld
         nmon
-        python-autopep8
-        python-dev
-        python-yapf
+        python3-autopep8
+        python3-yapf
         python3-dev
         rsync
         shellcheck
