@@ -69,6 +69,7 @@ if filereadable(expand("~/.vim/autoload/plug.vim"))
     Plug 'vim-scripts/argtextobj.vim'                                        " Argument object
     Plug 'vim-scripts/matchit.zip'                                           " Improve % operation
     Plug 'vim-syntastic/syntastic'                                           " Clang Tidy etc
+    Plug 'psf/black'                                                         " A python code formatter
     call plug#end()
 endif
 " }
@@ -196,7 +197,7 @@ set matchpairs+=<:>             " Match, to be used with %
 set pastetoggle=<F12>           " pastetoggle (sane indentation on pastes)
 " Remove trailing whitespaces and ^M chars
 augroup stripWHITESPACE
-    autocmd FileType vim,c,cpp,python,xml,yml,cmake,sh,bash,py,gitcommit,yaml,glsl,bzl autocmd BufWritePre <buffer> call StripTrailingWhitespace()
+    autocmd FileType json,vim,c,cpp,python,xml,yml,cmake,sh,bash,py,gitcommit,yaml,glsl,bzl autocmd BufWritePre <buffer> call StripTrailingWhitespace()
 augroup END
 
 let python_highlight_all = 1
@@ -524,8 +525,9 @@ if isdirectory(expand("~/.vim/plugged/vim-codefmt/"))
       autocmd FileType gn AutoFormatBuffer gn
       " autocmd FileType html,css,json AutoFormatBuffer js-beautify
       autocmd FileType java AutoFormatBuffer google-java-format
+      " black is used instead
       " autocmd FileType python AutoFormatBuffer yapf
-      autocmd FileType python AutoFormatBuffer autopep8
+      " autocmd FileType python AutoFormatBuffer autopep8
     augroup END
 endif
 " }
