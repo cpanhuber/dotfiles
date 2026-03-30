@@ -58,5 +58,7 @@
   template = ~/.gitmessage
 [credential]
     helper = store
+[init]
+    defaultBranch = main
 
 # vim: sw=4 ts=4 et filetype=gitconfig:
