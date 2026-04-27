@@ -35,12 +35,12 @@
 
     # delete fully merged branches
     brd = "!git branch --merged | grep -v '\\*' | xargs -n 1 git branch -d"
-    # rebase current branch onto freshly pulled main
-    upd = "!git co main && git pull && git co - && git rebase main"
+    # rebase current branch onto latest origin main
+    upd = "!git fetch origin main && git rebase origin/main"
     # try to rebase local branches onto origin/main
     upd-rebase-all = "!for branch in $(git for-each-ref --format=\"%(refname:lstrip=2)\" refs/heads/); do echo rebasing \"$branch\"; git rebase origin/main \"$branch\" > /dev/null || git rebase --abort; done"
     # do all above
-    upd-all = "!git upd && git upd-rebase-all && git co main && (git brd 2> /dev/null || echo all up-to-date)"
+    upd-all = "!git upd && git upd-rebase-all && git co main && git pull && (git brd 2> /dev/null || echo all up-to-date)"
 [core]
     excludesfile = ~/.gitignore
 [fetch]
