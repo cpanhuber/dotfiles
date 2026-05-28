@@ -14,6 +14,7 @@
     cp = cherry-pick
     df = diff
     ds = diff --staged
+    ph = push --force-with-lease
     sh = show HEAD
     # show only 10 logs
     l = log --graph --oneline --decorate -10
