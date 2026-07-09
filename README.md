@@ -10,7 +10,7 @@ git clone https://github.com/ddrexl/dotfiles.git
 Run the install script.
 ```bash
 cd dotfiles # enter the repo dir
-./install.bash
+./install.sh
 ```
 
 Select the things you want, separated by commas or whitespace.

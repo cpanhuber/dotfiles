@@ -1,9 +1,8 @@
 [init]
     templatedir = ~/.git_template
+    defaultBranch = main
 [push]
     default = current
-[color]
-    ui = auto
 [alias]
     br = branch
     ca = commit --amend
@@ -48,7 +47,6 @@
     prune = true
 [diff]
     indentHeuristic = true
-    compactionHeuristic = true
 [diff "bin"]
     # Use `hexdump` to diff binary files
     textconv = hexdump -v -C
@@ -56,10 +54,8 @@
     # force user config on a per repo basis if no global user config
     useconfigonly = true
 [commit]
-  template = ~/.gitmessage
+    template = ~/.gitmessage
 [credential]
     helper = store
-[init]
-    defaultBranch = main
 
 # vim: sw=4 ts=4 et filetype=gitconfig:

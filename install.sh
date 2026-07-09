@@ -1,5 +1,4 @@
 #!/bin/bash
-# TODO help, opitonal force link
 
 DOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
@@ -53,7 +52,7 @@ install_dev_packages() {
 
 install_powerline_symbols() {
     echo install powerline symbols
-    local FONT_DIR="~/.local/share/fonts"
+    local FONT_DIR="${HOME}/.local/share/fonts"
     local URL="https://github.com/powerline/powerline/raw/develop/font"
 
     if [[ ! -e "${FONT_DIR}/PowerlineSymbols.otf" ]]; then
@@ -161,11 +160,13 @@ configure_git() {
 configure_zsh() {
     echo configure zsh
     echo download prompt
-    git clone https://github.com/sindresorhus/pure.git ~/.zsh/pure
+    if [ ! -d ~/.zsh/pure ]; then
+        git clone https://github.com/sindresorhus/pure.git ~/.zsh/pure
+    fi
     echo download colors
     curl -fLo ~/.zsh/dircolors/dircolors.ansi-dark https://raw.githubusercontent.com/seebi/dircolors-solarized/master/dircolors.ansi-dark --create-dirs
-    mkdir ~/.zsh/completions
-    mkdir ~/.zsh/cache
+    mkdir -p ~/.zsh/completions
+    mkdir -p ~/.zsh/cache
     ln -svf ${DOTDIR}/zshrc ~/.zshrc
 }
 
