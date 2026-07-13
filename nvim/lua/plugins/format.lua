@@ -12,18 +12,27 @@ return {
             desc = 'Format buffer',
         },
     },
-    opts = {
-        formatters_by_ft = {
+    opts = function()
+        local formatters_by_ft = {
             c = { 'clang_format' },
             cpp = { 'clang_format' },
-            javascript = { 'prettier' },
             lua = { 'stylua' },
             python = { 'ruff_format' },
-            rust = { 'rustfmt' },
             sh = { 'shfmt' },
             toml = { 'taplo' },
-            typescript = { 'prettier' },
-        },
-        format_on_save = { timeout_ms = 1000, lsp_format = 'never' },
-    },
+        }
+        -- formatters needing a language toolchain, which only
+        -- devcontainers have
+        if vim.fn.executable('node') == 1 then
+            formatters_by_ft.javascript = { 'prettier' }
+            formatters_by_ft.typescript = { 'prettier' }
+        end
+        if vim.fn.executable('rustfmt') == 1 then
+            formatters_by_ft.rust = { 'rustfmt' }
+        end
+        return {
+            formatters_by_ft = formatters_by_ft,
+            format_on_save = { timeout_ms = 1000, lsp_format = 'never' },
+        }
+    end,
 }

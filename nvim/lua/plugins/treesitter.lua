@@ -4,6 +4,9 @@
 return {
     'nvim-treesitter/nvim-treesitter',
     branch = 'main',
+    -- last commit supporting nvim 0.11 ("feat!: drop support for Nvim 0.11"
+    -- follows it); remove the pin once nvim >= 0.12
+    commit = '90cd6580',
     build = ':TSUpdate',
     lazy = false,
     config = function()

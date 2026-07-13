@@ -18,7 +18,8 @@ install_packages() {
         tree
         vifm
         vim-athena
-        wl-clipboard
+        wl-clipboard # neovim clipboard on wayland/WSLg
+        python3-venv # neovim: mason installs basedpyright into a venv
         xsel
         zsh
         jq
@@ -42,9 +43,6 @@ install_dev_packages() {
         clangd-9
         exuberant-ctags
         python3-dev
-        nodejs              # runs the vtsls and prettier mason packages
-        npm
-        dotnet-runtime-10.0 # runs the roslyn language server (C#)
     )
 
     sudo apt update

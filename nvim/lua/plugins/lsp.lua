@@ -1,6 +1,46 @@
 -- Native LSP. Servers are installed by mason (:Mason), enabled by
 -- mason-lspconfig. Keymaps and diagnostics reproduce the vim-lsp block
 -- from the old vimrc.
+--
+-- The host is kept free of language runtimes (development happens in
+-- devcontainers), so servers that need node or dotnet only register
+-- where that runtime exists — e.g. inside a devcontainer.
+local has_node = vim.fn.executable('node') == 1
+local has_dotnet = vim.fn.executable('dotnet') == 1
+local has_rust = vim.fn.executable('rustc') == 1
+
+local servers = { 'basedpyright', 'ruff', 'lua_ls' }
+if has_node then
+    vim.list_extend(servers, { 'vtsls', 'bashls' })
+end
+if has_rust then
+    table.insert(servers, 'rust_analyzer')
+end
+
+-- installed servers auto-enable even without their runtime, block those
+local no_auto_enable = { 'stylua' } -- formatter, not an LSP (see format.lua)
+if not has_rust then
+    table.insert(no_auto_enable, 'rust_analyzer')
+end
+
+local mason_tools = {
+    -- language servers (mason package names)
+    'basedpyright', 'ruff', 'lua-language-server',
+    -- formatters (see format.lua)
+    'stylua', 'shfmt', 'taplo', 'clang-format',
+    -- parser compiler for nvim-treesitter
+    'tree-sitter-cli',
+}
+if has_node then
+    vim.list_extend(mason_tools, { 'vtsls', 'bash-language-server', 'prettier' })
+end
+if has_dotnet then
+    table.insert(mason_tools, 'roslyn')
+end
+if has_rust then
+    table.insert(mason_tools, 'rust-analyzer')
+end
+
 return {
     {
         'mason-org/mason.nvim',
@@ -15,23 +55,17 @@ return {
         'mason-org/mason-lspconfig.nvim',
         dependencies = { 'mason-org/mason.nvim', 'neovim/nvim-lspconfig' },
         opts = {
-            ensure_installed = { 'rust_analyzer', 'basedpyright', 'ruff', 'vtsls', 'bashls', 'lua_ls' },
+            ensure_installed = servers,
+            automatic_enable = { exclude = no_auto_enable },
         },
     },
     {
         -- installs everything else and gives install.sh a synchronous
-        -- :MasonToolsInstallSync for bootstrapping; formatters see format.lua
+        -- :MasonToolsInstallSync for bootstrapping
         'WhoIsSethDaniel/mason-tool-installer.nvim',
         dependencies = { 'mason-org/mason.nvim' },
         opts = {
-            ensure_installed = {
-                -- language servers (mason package names)
-                'rust-analyzer', 'basedpyright', 'ruff', 'vtsls', 'bash-language-server', 'lua-language-server', 'roslyn',
-                -- formatters
-                'stylua', 'shfmt', 'taplo', 'prettier', 'clang-format',
-                -- parser compiler for nvim-treesitter
-                'tree-sitter-cli',
-            },
+            ensure_installed = mason_tools,
         },
     },
     {
@@ -48,6 +82,7 @@ return {
         -- C#: the Roslyn language server (the one VS Code uses),
         -- self-attaching, not managed by mason-lspconfig
         'seblyng/roslyn.nvim',
+        enabled = has_dotnet,
         ft = 'cs',
         opts = {},
     },

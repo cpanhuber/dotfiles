@@ -31,6 +31,13 @@ require('lazy').setup({
     install = { colorscheme = { 'solarized' } },
     checker = { enabled = false },
     change_detection = { notify = false },
+    rocks = { enabled = false }, -- no plugin needs luarocks
+    performance = {
+        rtp = {
+            -- lazy resets the rtp; keep the treesitter parser dir in it
+            paths = { vim.fn.stdpath('data') .. '/site' },
+        },
+    },
 })
 
 -- Source local config if available
