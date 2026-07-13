@@ -18,6 +18,7 @@ install_packages() {
         tree
         vifm
         vim-athena
+        wl-clipboard
         xsel
         zsh
         jq
@@ -41,6 +42,9 @@ install_dev_packages() {
         clangd-9
         exuberant-ctags
         python3-dev
+        nodejs              # runs the vtsls and prettier mason packages
+        npm
+        dotnet-runtime-10.0 # runs the roslyn language server (C#)
     )
 
     sudo apt update
@@ -108,6 +112,49 @@ install_docker_in_wsl2() {
 
     echo restart WSL2 to apply the changes
     echo execute \"wsl --shutdown\" in cmd or pwsh
+}
+
+install_neovim() {
+    if exists nvim; then
+        echo neovim found
+        return
+    fi
+
+    echo install neovim
+    local candidate=$(apt-cache policy neovim | awk '/Candidate:/ {print $2}')
+    if dpkg --compare-versions "${candidate%%[-+]*}" ge 0.10 2>/dev/null; then
+        sudo apt update
+        sudo apt install --assume-yes neovim
+    else
+        # apt version too old for the plugins (ubuntu <= 24.04),
+        # use the official build instead
+        echo "apt only has neovim '${candidate}', installing the official build to /opt"
+        curl -fLo /tmp/nvim-linux-x86_64.tar.gz https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz
+        sudo rm -rf /opt/nvim-linux-x86_64
+        sudo tar -C /opt -xzf /tmp/nvim-linux-x86_64.tar.gz
+        sudo ln -svf /opt/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim
+        rm /tmp/nvim-linux-x86_64.tar.gz
+    fi
+}
+
+configure_neovim() {
+    echo configure neovim
+
+    install_neovim
+
+    mkdir -p ~/.config
+    # -n: don't follow an existing symlink, or re-runs would nest nvim/nvim
+    ln -svfn ${DOTDIR}/nvim ~/.config/nvim
+
+    # never overwrite existing .nvim.local.lua
+    if [ ! -f ~/.nvim.local.lua ]; then
+        cp ${DOTDIR}/nvim.local.lua ~/.nvim.local.lua
+    fi
+
+    echo install neovim plugins, language servers and treesitter parsers
+    nvim --headless "+Lazy! sync" +qa
+    nvim --headless "+MasonToolsInstallSync" +qa
+    nvim --headless "+lua require('nvim-treesitter').install(require('treesitter-parsers')):wait(300000)" +qa
 }
 
 configure_vim() {
@@ -212,7 +259,8 @@ help() {
     --install_all           installs all above options
     --install_docker_wsl2   installs docker in wsl2 (no docker desktop)
 
-    --configure_all         configures all below options
+    --configure_all         configures all below options (vim: only neovim)
+    --configure_neovim
     --configure_vim
     --configure_tmux
     --configure_git
@@ -246,6 +294,7 @@ while [[ "$#" -gt 0 ]]; do
         --install_docker_wsl2) array+=(14);;
 
         --configure_all) array+=(6);;
+        --configure_neovim) array+=(15);;
         --configure_vim) array+=(7);;
         --configure_tmux) array+=(8);;
         --configure_git) array+=(9);;
@@ -278,7 +327,7 @@ for choice in "${array[@]}"; do
             install_kubernetes_tools
             ;;
         6)
-            configure_vim
+            configure_neovim
             configure_tmux
             configure_git
             configure_zsh
@@ -302,6 +351,9 @@ for choice in "${array[@]}"; do
             ;;
         12)
             configure_kubernetes_tools
+            ;;
+        15)
+            configure_neovim
             ;;
         *)
             echo invalid number $choice

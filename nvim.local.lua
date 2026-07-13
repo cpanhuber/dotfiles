@@ -1,0 +1,7 @@
+-- Machine-local Neovim overrides, loaded at the very end of init.lua.
+-- install.sh copies this template to ~/.nvim.local.lua once and never
+-- overwrites it (the ~/.vimrc.local of the neovim config).
+--
+-- Examples:
+-- vim.o.background = 'light'
+-- vim.o.shiftwidth = 2
