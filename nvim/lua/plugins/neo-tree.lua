@@ -1,4 +1,4 @@
--- File browser sidebar, replaces NERDTree: same keys, same width,
+-- File browser sidebar, replaces NERDTree: same keys, self-sizing width,
 -- closes after opening a file. Directory buffers belong to oil.nvim.
 return {
     'nvim-neo-tree/neo-tree.nvim',
@@ -14,7 +14,10 @@ return {
         { '<leader>n', '<Cmd>Neotree reveal<CR>', desc = 'Reveal current file in tree' },
     },
     opts = {
-        window = { width = 60 },
+        window = {
+            width = '25%', -- share of the terminal, not a fixed column count
+            auto_expand_width = true, -- grow past that to fit the longest entry
+        },
         filesystem = {
             hijack_netrw_behavior = 'disabled', -- oil.nvim owns directory buffers
             filtered_items = {
