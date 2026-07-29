@@ -27,6 +27,7 @@ alias tt='tmux attach -t 0-1 || tmux new -t 0'
 alias which-command=whence
 alias k="kubectl"
 alias c="batcat"
+alias d="lazydocker"
 
 # vi mode
 bindkey -v

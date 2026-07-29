@@ -112,6 +112,22 @@ install_docker_in_wsl2() {
     echo execute \"wsl --shutdown\" in cmd or pwsh
 }
 
+install_lazydocker() {
+    if exists lazydocker; then
+        echo lazydocker found
+        return
+    fi
+
+    # not packaged in apt, take the release binary from github
+    echo install lazydocker
+    local version=$(curl -fsSL https://api.github.com/repos/jesseduffield/lazydocker/releases/latest | jq -r .tag_name)
+    version=${version#v}
+    curl -fLo /tmp/lazydocker.tar.gz "https://github.com/jesseduffield/lazydocker/releases/download/v${version}/lazydocker_${version}_Linux_x86_64.tar.gz"
+    tar -C /tmp -xzf /tmp/lazydocker.tar.gz lazydocker
+    sudo install -m 755 /tmp/lazydocker /usr/local/bin/lazydocker
+    rm /tmp/lazydocker.tar.gz /tmp/lazydocker
+}
+
 install_neovim() {
     if exists nvim; then
         echo neovim found
@@ -254,6 +270,7 @@ help() {
     --install_packages      my dev packages
     --powerline_symbols
     --install_k8s           install kubectl, helm
+    --install_lazydocker    install lazydocker, a docker TUI
     --install_all           installs all above options
     --install_docker_wsl2   installs docker in wsl2 (no docker desktop)
 
@@ -269,6 +286,7 @@ help() {
 Without arguments, the default applies:
     --install_packages
     --install_k8s
+    --install_lazydocker
     --configure_all
 "
 }
@@ -278,6 +296,7 @@ array=()
 if [[ "$#" -eq 0 ]]; then
     array+=(1)
     array+=(13)
+    array+=(16)
     array+=(6)
 fi
 
@@ -288,6 +307,7 @@ while [[ "$#" -gt 0 ]]; do
         --install_packages) array+=(1);;
         --powerline_symbols) array+=(3);;
         --install_k8s) array+=(13);;
+        --install_lazydocker) array+=(16);;
         --install_all) array+=(5);;
         --install_docker_wsl2) array+=(14);;
 
@@ -316,6 +336,9 @@ for choice in "${array[@]}"; do
         13)
             install_kubernetes_tools
             ;;
+        16)
+            install_lazydocker
+            ;;
         14)
             install_docker_in_wsl2
             ;;
@@ -323,6 +346,7 @@ for choice in "${array[@]}"; do
             install_packages
             install_powerline_symbols
             install_kubernetes_tools
+            install_lazydocker
             ;;
         6)
             configure_neovim
