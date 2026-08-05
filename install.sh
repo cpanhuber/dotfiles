@@ -224,7 +224,7 @@ install_powerline_symbols() {
     local legacy="${HOME}/.local/share/fonts/${FONT_FILE}"
 
     if is_macos; then
-        # macOS apps (Cursor, Terminal.app) only see fonts under Library/Fonts.
+        # macOS apps (Cursor, Terminal.app, iTerm) only see fonts under Library/Fonts.
         # ~/.local/share/fonts is ignored — a common cause of tofu glyphs in tmux.
         FONT_DIR="${HOME}/Library/Fonts"
     else
@@ -248,6 +248,144 @@ install_powerline_symbols() {
                 "${URL}/10-powerline-symbols.conf" --create-dirs
         fi
     fi
+
+    if is_macos; then
+        install_nerd_font_macos
+        configure_macos_terminal_fonts
+    fi
+}
+
+# MesloLGS Nerd Font includes Powerline / Private Use glyphs used by tmux status.
+install_nerd_font_macos() {
+    local font_file="${HOME}/Library/Fonts/MesloLGSNerdFont-Regular.ttf"
+
+    if [[ -f "${font_file}" ]]; then
+        echo "MesloLGS Nerd Font already installed"
+        return 0
+    fi
+
+    ensure_homebrew || return 1
+    echo "install MesloLGS Nerd Font (Homebrew cask)"
+    brew install --cask font-meslo-lg-nerd-font
+}
+
+# Point Terminal.app and iTerm2 at MesloLGS Nerd Font so tmux Powerline
+# separators render (Cursor uses settings.json separately).
+configure_macos_terminal_fonts() {
+    local font_family="MesloLGS Nerd Font"
+    local font_size="13"
+
+    echo "configure macOS terminal fonts -> ${font_family}"
+
+    # --- Terminal.app -------------------------------------------------------
+    if [[ -d /System/Applications/Utilities/Terminal.app ]] || [[ -d /Applications/Utilities/Terminal.app ]]; then
+        echo "  Terminal.app: set default / startup / all profile fonts"
+        osascript <<EOF >/dev/null || warn_terminal_font "Terminal.app"
+tell application "Terminal"
+    activate
+    try
+        set font name of default settings to "${font_family}"
+        set font size of default settings to ${font_size}
+    end try
+    try
+        set font name of startup settings to "${font_family}"
+        set font size of startup settings to ${font_size}
+    end try
+    repeat with s in settings sets
+        try
+            set font name of s to "${font_family}"
+            set font size of s to ${font_size}
+        end try
+    end repeat
+end tell
+EOF
+    fi
+
+    # --- iTerm2 -------------------------------------------------------------
+    if [[ -d /Applications/iTerm.app ]] || [[ -d /Applications/iTerm2.app ]] \
+        || [[ -f "${HOME}/Library/Preferences/com.googlecode.iterm2.plist" ]]; then
+        echo "  iTerm2: set Normal Font on all profiles"
+        python3 - "${font_family}" "${font_size}" <<'PY' || warn_terminal_font "iTerm2"
+import plistlib
+import sys
+from pathlib import Path
+
+family, size = sys.argv[1], sys.argv[2]
+font_value = f"{family} {size}"
+plist_path = Path.home() / "Library/Preferences/com.googlecode.iterm2.plist"
+
+if not plist_path.exists():
+    print(f"    iTerm2 preferences not found at {plist_path}; open iTerm once, then re-run", file=sys.stderr)
+    sys.exit(1)
+
+with plist_path.open("rb") as f:
+    data = plistlib.load(f)
+
+bookmarks = data.get("New Bookmarks")
+if not isinstance(bookmarks, list) or not bookmarks:
+    print("    no iTerm2 profiles (New Bookmarks) found", file=sys.stderr)
+    sys.exit(1)
+
+changed = 0
+for bookmark in bookmarks:
+    if not isinstance(bookmark, dict):
+        continue
+    if bookmark.get("Normal Font") != font_value:
+        bookmark["Normal Font"] = font_value
+        changed += 1
+    # Prefer one font for ASCII and non-ASCII (Powerline glyphs live here).
+    bookmark["Use Non-ASCII Font"] = False
+
+with plist_path.open("wb") as f:
+    plistlib.dump(data, f)
+
+print(f"    updated {changed} iTerm2 profile(s); restart iTerm2 to apply")
+PY
+    else
+        echo "  iTerm2 not installed; skipping"
+    fi
+
+    # --- Cursor / VS Code integrated terminal -------------------------------
+    local cursor_settings="${HOME}/Library/Application Support/Cursor/User/settings.json"
+    if [[ -f "${cursor_settings}" ]] || [[ -d "${cursor_settings%/*}" ]]; then
+        echo "  Cursor: set terminal.integrated.fontFamily"
+        mkdir -p "${cursor_settings%/*}"
+        python3 - "${cursor_settings}" "${font_family}" <<'PY' || warn_terminal_font "Cursor"
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+family = sys.argv[2]
+data = {}
+if path.exists() and path.stat().st_size:
+    raw = path.read_text()
+    # VS Code / Cursor settings allow comments; strip // line comments lightly
+    lines = []
+    for line in raw.splitlines():
+        stripped = line.lstrip()
+        if stripped.startswith("//"):
+            continue
+        lines.append(line)
+    try:
+        data = json.loads("\n".join(lines))
+    except json.JSONDecodeError:
+        data = json.loads(raw)
+
+if not isinstance(data, dict):
+    data = {}
+
+data["terminal.integrated.fontFamily"] = family
+path.write_text(json.dumps(data, indent=4) + "\n")
+print(f"    wrote {path}")
+PY
+    fi
+
+    echo "  Restart Terminal.app / iTerm2 (and reload Cursor) to apply"
+}
+
+warn_terminal_font() {
+    echo "  warning: could not configure $1 font automatically" >&2
 }
 
 install_kubernetes_tools() {
@@ -421,7 +559,7 @@ help() {
     -h|--help               show this help
 
     --install_packages      my dev packages
-    --powerline_symbols
+    --powerline_symbols     PowerlineSymbols (+ macOS: Nerd Font, Terminal/iTerm)
     --install_k8s           install kubectl, helm
     --install_all           installs all above options
     --install_docker_wsl2   installs docker in wsl2 (no docker desktop)
