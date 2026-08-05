@@ -16,6 +16,34 @@ is_linux() {
     [[ "$OS" == "Linux" ]]
 }
 
+iterm_app_path() {
+    if [[ -d /Applications/iTerm.app ]]; then
+        echo /Applications/iTerm.app
+    elif [[ -d /Applications/iTerm2.app ]]; then
+        echo /Applications/iTerm2.app
+    else
+        return 1
+    fi
+}
+
+# On macOS this setup assumes iTerm2 (fonts + Solarized palette).
+require_iterm_macos() {
+    is_macos || return 0
+
+    if iterm_app_path >/dev/null; then
+        return 0
+    fi
+
+    cat >&2 <<'EOF'
+error: iTerm2 is required on macOS for this dotfiles setup.
+
+Install iTerm2, then re-run ./install.sh:
+  https://iterm2.com/
+  or: brew install --cask iterm2
+EOF
+    exit 1
+}
+
 ensure_homebrew() {
     if exists brew; then
         return 0
@@ -270,12 +298,13 @@ install_nerd_font_macos() {
 }
 
 # Point Terminal.app and iTerm2 at MesloLGS Nerd Font so tmux Powerline
-# separators render (Cursor uses settings.json separately).
+# separators render; apply Solarized Dark to iTerm (matches dircolors/vim).
 configure_macos_terminal_fonts() {
     local font_family="MesloLGS Nerd Font"
     # Terminal.app AppleScript accepts the family; iTerm stores PostScript name + size.
     local font_ps_name="MesloLGSNF-Regular"
     local font_size="13"
+    local solarized_url="https://raw.githubusercontent.com/altercation/solarized/master/iterm2-colors-solarized/Solarized%20Dark.itermcolors"
 
     echo "configure macOS terminal fonts -> ${font_family}"
 
@@ -303,21 +332,38 @@ end tell
 EOF
     fi
 
-    # --- iTerm2 -------------------------------------------------------------
-    if [[ -d /Applications/iTerm.app ]] || [[ -d /Applications/iTerm2.app ]] \
-        || [[ -f "${HOME}/Library/Preferences/com.googlecode.iterm2.plist" ]]; then
-        echo "  iTerm2: set Normal Font on all profiles (${font_ps_name})"
-        python3 - "${font_ps_name}" "${font_size}" <<'PY' || warn_terminal_font "iTerm2"
+    # --- iTerm2: font + Solarized Dark palette ------------------------------
+    # Quit first: a running iTerm keeps prefs in memory and overwrites the plist on exit.
+    if pgrep -xq iTerm2 || pgrep -xq iTerm; then
+        echo "  iTerm2: quitting so preferences can be updated safely"
+        osascript -e 'tell application "iTerm" to quit' >/dev/null 2>&1 || killall iTerm2 2>/dev/null || true
+        # Wait until it actually exits (prefs flush).
+        for _ in 1 2 3 4 5 6 7 8 9 10; do
+            pgrep -xq iTerm2 || pgrep -xq iTerm || break
+            sleep 0.3
+        done
+    fi
+
+    echo "  iTerm2: set Normal Font (${font_ps_name}) + Solarized Dark"
+    python3 - "${font_ps_name}" "${font_size}" "${solarized_url}" <<'PY' || warn_terminal_font "iTerm2"
 import plistlib
 import sys
+import urllib.request
 from pathlib import Path
 
-ps_name, size = sys.argv[1], sys.argv[2]
+ps_name, size, scheme_url = sys.argv[1], sys.argv[2], sys.argv[3]
 font_value = f"{ps_name} {size}"
 plist_path = Path.home() / "Library/Preferences/com.googlecode.iterm2.plist"
 
 if not plist_path.exists():
     print(f"    iTerm2 preferences not found at {plist_path}; open iTerm once, then re-run", file=sys.stderr)
+    sys.exit(1)
+
+with urllib.request.urlopen(scheme_url, timeout=30) as resp:
+    scheme = plistlib.loads(resp.read())
+
+if not isinstance(scheme, dict) or not scheme:
+    print("    failed to load Solarized Dark.itermcolors", file=sys.stderr)
     sys.exit(1)
 
 with plist_path.open("rb") as f:
@@ -328,27 +374,34 @@ if not isinstance(bookmarks, list) or not bookmarks:
     print("    no iTerm2 profiles (New Bookmarks) found", file=sys.stderr)
     sys.exit(1)
 
-changed = 0
 for bookmark in bookmarks:
     if not isinstance(bookmark, dict):
         continue
-    if bookmark.get("Normal Font") != font_value:
-        bookmark["Normal Font"] = font_value
-        changed += 1
+    bookmark["Normal Font"] = font_value
     bookmark["Non Ascii Font"] = font_value
     # One patched font for ASCII + Powerline Private Use glyphs.
     bookmark["Use Non-ASCII Font"] = False
+    # iTerm 3.5+ can keep separate Light/Dark palettes; those override the
+    # base keys when enabled. Force a single Solarized Dark palette.
+    bookmark["Use Separate Colors for Light and Dark Mode"] = False
+    for key, color in scheme.items():
+        bookmark[key] = color
+        # Also populate Dark variants so a later re-enable still looks right.
+        bookmark[f"{key} (Dark)"] = color
 
 with plist_path.open("wb") as f:
     plistlib.dump(data, f)
 
-print(f"    updated {changed} iTerm2 profile(s) -> {font_value}")
-print("    fully quit iTerm2 (Cmd-Q) and reopen to apply")
+print(f"    updated {len(bookmarks)} iTerm2 profile(s) -> {font_value} + Solarized Dark")
 PY
-    else
-        echo "  iTerm2 not installed; skipping"
-    fi
 
+    # Prefer cached prefs not to resurrect old colors.
+    killall cfprefsd 2>/dev/null || true
+
+    if [[ -d /Applications/iTerm.app ]] || [[ -d /Applications/iTerm2.app ]]; then
+        echo "  iTerm2: reopening"
+        open -a iTerm
+    fi
     # --- Cursor / VS Code integrated terminal -------------------------------
     local cursor_settings="${HOME}/Library/Application Support/Cursor/User/settings.json"
     if [[ -f "${cursor_settings}" ]] || [[ -d "${cursor_settings%/*}" ]]; then
@@ -562,7 +615,7 @@ help() {
     -h|--help               show this help
 
     --install_packages      my dev packages
-    --powerline_symbols     PowerlineSymbols (+ macOS: Nerd Font, Terminal/iTerm)
+    --powerline_symbols     PowerlineSymbols (+ macOS: Nerd Font, iTerm Solarized Dark)
     --install_k8s           install kubectl, helm
     --install_all           installs all above options
     --install_docker_wsl2   installs docker in wsl2 (no docker desktop)
@@ -612,6 +665,8 @@ while [[ "$#" -gt 0 ]]; do
     esac
     shift
 done
+
+require_iterm_macos
 
 for choice in "${array[@]}"; do
     case "$choice" in
