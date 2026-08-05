@@ -130,6 +130,7 @@ install_packages() {
             eza
             duf
             coreutils
+            fzf
         )
 
         brew update
@@ -153,6 +154,7 @@ install_packages() {
             bat
             eza
             duf
+            fzf
         )
         # vim-athena has +clipboard and +python3
 
