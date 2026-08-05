@@ -78,8 +78,12 @@ setopt hist_verify            # show command with history expansion to user befo
 setopt inc_append_history     # add commands to HISTFILE in order of execution
 setopt share_history          # share command history data
 
-# colors
-eval `dircolors ~/.zsh/dircolors/dircolors.ansi-dark`
+# colors (GNU dircolors; on macOS: brew install coreutils → gdircolors)
+if command -v dircolors >/dev/null 2>&1; then
+    eval "$(dircolors ~/.zsh/dircolors/dircolors.ansi-dark)"
+elif command -v gdircolors >/dev/null 2>&1; then
+    eval "$(gdircolors ~/.zsh/dircolors/dircolors.ansi-dark)"
+fi
 
 # auto cd
 setopt auto_cd
