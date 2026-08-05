@@ -273,6 +273,8 @@ install_nerd_font_macos() {
 # separators render (Cursor uses settings.json separately).
 configure_macos_terminal_fonts() {
     local font_family="MesloLGS Nerd Font"
+    # Terminal.app AppleScript accepts the family; iTerm stores PostScript name + size.
+    local font_ps_name="MesloLGSNF-Regular"
     local font_size="13"
 
     echo "configure macOS terminal fonts -> ${font_family}"
@@ -304,14 +306,14 @@ EOF
     # --- iTerm2 -------------------------------------------------------------
     if [[ -d /Applications/iTerm.app ]] || [[ -d /Applications/iTerm2.app ]] \
         || [[ -f "${HOME}/Library/Preferences/com.googlecode.iterm2.plist" ]]; then
-        echo "  iTerm2: set Normal Font on all profiles"
-        python3 - "${font_family}" "${font_size}" <<'PY' || warn_terminal_font "iTerm2"
+        echo "  iTerm2: set Normal Font on all profiles (${font_ps_name})"
+        python3 - "${font_ps_name}" "${font_size}" <<'PY' || warn_terminal_font "iTerm2"
 import plistlib
 import sys
 from pathlib import Path
 
-family, size = sys.argv[1], sys.argv[2]
-font_value = f"{family} {size}"
+ps_name, size = sys.argv[1], sys.argv[2]
+font_value = f"{ps_name} {size}"
 plist_path = Path.home() / "Library/Preferences/com.googlecode.iterm2.plist"
 
 if not plist_path.exists():
@@ -333,13 +335,15 @@ for bookmark in bookmarks:
     if bookmark.get("Normal Font") != font_value:
         bookmark["Normal Font"] = font_value
         changed += 1
-    # Prefer one font for ASCII and non-ASCII (Powerline glyphs live here).
+    bookmark["Non Ascii Font"] = font_value
+    # One patched font for ASCII + Powerline Private Use glyphs.
     bookmark["Use Non-ASCII Font"] = False
 
 with plist_path.open("wb") as f:
     plistlib.dump(data, f)
 
-print(f"    updated {changed} iTerm2 profile(s); restart iTerm2 to apply")
+print(f"    updated {changed} iTerm2 profile(s) -> {font_value}")
+print("    fully quit iTerm2 (Cmd-Q) and reopen to apply")
 PY
     else
         echo "  iTerm2 not installed; skipping"
@@ -360,7 +364,6 @@ family = sys.argv[2]
 data = {}
 if path.exists() and path.stat().st_size:
     raw = path.read_text()
-    # VS Code / Cursor settings allow comments; strip // line comments lightly
     lines = []
     for line in raw.splitlines():
         stripped = line.lstrip()
