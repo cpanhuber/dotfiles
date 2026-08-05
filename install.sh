@@ -1,90 +1,286 @@
 #!/bin/bash
 
 DOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+OS="$(uname -s)"
+ARCH="$(uname -m)"
 
 exists() {
-    command -v $1 >/dev/null 2>&1
+    command -v "$1" >/dev/null 2>&1
+}
+
+is_macos() {
+    [[ "$OS" == "Darwin" ]]
+}
+
+is_linux() {
+    [[ "$OS" == "Linux" ]]
+}
+
+ensure_homebrew() {
+    if exists brew; then
+        return 0
+    fi
+
+    echo "Homebrew not found; installing Homebrew"
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+    # Apple Silicon installs to /opt/homebrew
+    if [[ -x /opt/homebrew/bin/brew ]]; then
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+    elif [[ -x /usr/local/bin/brew ]]; then
+        eval "$(/usr/local/bin/brew shellenv)"
+    fi
+
+    if ! exists brew; then
+        echo "Homebrew installation failed or brew is not on PATH" >&2
+        return 1
+    fi
+}
+
+kubectl_platform() {
+    local os arch
+    case "$OS" in
+        Darwin) os="darwin" ;;
+        Linux)  os="linux" ;;
+        *)
+            echo "Unsupported OS for kubectl: $OS" >&2
+            return 1
+            ;;
+    esac
+
+    case "$ARCH" in
+        arm64|aarch64) arch="arm64" ;;
+        x86_64|amd64)  arch="amd64" ;;
+        *)
+            echo "Unsupported architecture for kubectl: $ARCH" >&2
+            return 1
+            ;;
+    esac
+
+    echo "${os}/${arch}"
+}
+
+# True if kubectl exists and can actually run on this machine
+# (guards against leftover linux/amd64 binaries on macOS).
+kubectl_usable() {
+    exists kubectl || return 1
+    kubectl version --client >/dev/null 2>&1
+}
+
+install_kubectl() {
+    if is_macos; then
+        ensure_homebrew || return 1
+        echo "install kubectl via Homebrew"
+        brew install kubectl
+        # Drop an unusable binary earlier on PATH (e.g. leftover linux/amd64).
+        if exists kubectl && ! kubectl_usable; then
+            local bad
+            bad="$(command -v kubectl)"
+            echo "removing unusable kubectl at ${bad}"
+            sudo rm -f "${bad}"
+        fi
+        if kubectl_usable; then
+            return 0
+        fi
+        echo "Homebrew kubectl not usable yet; falling back to direct download" >&2
+    fi
+
+    local RELEASE PLATFORM DEST TMP
+    RELEASE=$(curl -L -s https://dl.k8s.io/release/stable.txt)
+    PLATFORM=$(kubectl_platform) || return 1
+    TMP="$(mktemp -d)"
+    DEST="/usr/local/bin/kubectl"
+
+    echo "install kubectl (${PLATFORM}) to ${DEST}"
+    curl -fL "https://dl.k8s.io/release/${RELEASE}/bin/${PLATFORM}/kubectl" -o "${TMP}/kubectl"
+    chmod +x "${TMP}/kubectl"
+
+    if sudo mv "${TMP}/kubectl" "${DEST}"; then
+        rm -rf "${TMP}"
+        return 0
+    fi
+
+    # No sudo: install to a user bin that is on PATH
+    DEST="${HOME}/.local/bin/kubectl"
+    mkdir -p "$(dirname "${DEST}")"
+    mv "${TMP}/kubectl" "${DEST}"
+    rm -rf "${TMP}"
+    echo "installed kubectl to ${DEST}"
+    echo "if another kubectl earlier on PATH is broken, remove it: sudo rm -f \$(command -v kubectl)"
 }
 
 install_packages() {
-    echo install some basic command line utilities using apt
+    if is_macos; then
+        echo "install some basic command line utilities using Homebrew"
 
-    local packages=(
-        curl
-        git
-        ripgrep
-        rsync
-        tmux
-        tree
-        vifm
-        vim-athena
-        xsel
-        zsh
-        jq
-        dnsutils
-        bat
-        eza
-        duf
-    )
-    # vim-athena has +clipboard and +python3
+        ensure_homebrew || return 1
 
-    sudo apt update
-    echo ${packages[*]} | xargs sudo apt install --assume-yes
+        local packages=(
+            curl
+            git
+            ripgrep
+            rsync
+            tmux
+            tree
+            vifm
+            vim
+            zsh
+            jq
+            bat
+            eza
+            duf
+            coreutils
+            fzf
+        )
+
+        brew update
+        brew install "${packages[@]}"
+    elif is_linux; then
+        echo "install some basic command line utilities using apt"
+
+        local packages=(
+            curl
+            git
+            ripgrep
+            rsync
+            tmux
+            tree
+            vifm
+            vim-athena
+            xsel
+            zsh
+            jq
+            dnsutils
+            bat
+            eza
+            duf
+            fzf
+        )
+        # vim-athena has +clipboard and +python3
+
+        sudo apt update
+        # shellcheck disable=SC2086
+        echo ${packages[*]} | xargs sudo apt install --assume-yes
+    else
+        echo "Unsupported OS: $OS" >&2
+        return 1
+    fi
 }
 
 install_dev_packages() {
-    echo install some packages for development using apt
+    if is_macos; then
+        echo "install some packages for development using Homebrew"
 
-    local packages=(
-        build-essential
-        clang-format
-        clangd-9
-        exuberant-ctags
-        python3-dev
-    )
+        ensure_homebrew || return 1
 
-    sudo apt update
-    echo ${packages[*]} | xargs sudo apt install --assume-yes
+        if ! xcode-select -p >/dev/null 2>&1; then
+            echo "install Xcode Command Line Tools"
+            xcode-select --install || true
+        fi
 
-    echo make clangd-9 the default clangd
-    sudo update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-9 100
+        local packages=(
+            clang-format
+            llvm
+            universal-ctags
+            python
+        )
+
+        brew update
+        brew install "${packages[@]}"
+
+        # Prefer brew clangd if available
+        if [[ -x "$(brew --prefix llvm)/bin/clangd" ]]; then
+            echo "clangd is available via: $(brew --prefix llvm)/bin/clangd"
+            echo "Add \$(brew --prefix llvm)/bin to your PATH if needed"
+        fi
+    elif is_linux; then
+        echo "install some packages for development using apt"
+
+        local packages=(
+            build-essential
+            clang-format
+            clangd-9
+            exuberant-ctags
+            python3-dev
+        )
+
+        sudo apt update
+        # shellcheck disable=SC2086
+        echo ${packages[*]} | xargs sudo apt install --assume-yes
+
+        echo "make clangd-9 the default clangd"
+        sudo update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-9 100
+    else
+        echo "Unsupported OS: $OS" >&2
+        return 1
+    fi
 }
 
 install_powerline_symbols() {
-    echo install powerline symbols
-    local FONT_DIR="${HOME}/.local/share/fonts"
+    echo "install powerline symbols"
     local URL="https://github.com/powerline/powerline/raw/develop/font"
+    local FONT_DIR
+    local FONT_FILE="PowerlineSymbols.otf"
+    local legacy="${HOME}/.local/share/fonts/${FONT_FILE}"
 
-    if [[ ! -e "${FONT_DIR}/PowerlineSymbols.otf" ]]; then
-        curl -fLo ${FONT_DIR}/PowerlineSymbols.otf ${URL}/PowerlineSymbols.otf --create-dirs
-        fc-cache -vf ${FONT_DIR}
-        curl -fLo ~/.config/fontconfig/conf.d/10-powerline-symbols.conf ${URL}/10-powerline-symbols.conf --create-dirs
+    if is_macos; then
+        # macOS apps (Cursor, Terminal.app) only see fonts under Library/Fonts.
+        # ~/.local/share/fonts is ignored — a common cause of tofu glyphs in tmux.
+        FONT_DIR="${HOME}/Library/Fonts"
+    else
+        FONT_DIR="${HOME}/.local/share/fonts"
+    fi
+
+    mkdir -p "${FONT_DIR}"
+
+    # Migrate a previous Linux-style install path on macOS.
+    if is_macos && [[ -f "${legacy}" && ! -e "${FONT_DIR}/${FONT_FILE}" ]]; then
+        echo "moving ${legacy} -> ${FONT_DIR}/${FONT_FILE}"
+        mv "${legacy}" "${FONT_DIR}/${FONT_FILE}"
+    fi
+
+    if [[ ! -e "${FONT_DIR}/${FONT_FILE}" ]]; then
+        curl -fLo "${FONT_DIR}/${FONT_FILE}" "${URL}/${FONT_FILE}" --create-dirs
+
+        if is_linux && exists fc-cache; then
+            fc-cache -vf "${FONT_DIR}"
+            curl -fLo ~/.config/fontconfig/conf.d/10-powerline-symbols.conf \
+                "${URL}/10-powerline-symbols.conf" --create-dirs
+        fi
     fi
 }
 
 install_kubernetes_tools() {
-    if ! exists kubectl; then
-        echo install kubectl
-        local RELEASE=$(curl -L -s https://dl.k8s.io/release/stable.txt)
-        curl -LO "https://dl.k8s.io/release/$RELEASE/bin/linux/amd64/kubectl"
-        chmod +x ./kubectl
-        sudo mv ./kubectl /usr/local/bin/
+    if kubectl_usable; then
+        echo "kubectl found"
     else
-        echo kubectl found
+        if exists kubectl; then
+            echo "kubectl present but not runnable on ${OS}/${ARCH}; reinstalling"
+        fi
+        install_kubectl || return 1
     fi
 
     if ! exists helm; then
-        echo install helm
+        echo "install helm"
         curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
         chmod 700 get_helm.sh
         sudo ./get_helm.sh
         rm ./get_helm.sh
     else
-        echo helm found
+        echo "helm found"
     fi
 }
 
 install_docker_in_wsl2() {
+    if is_macos; then
+        echo "Docker in WSL2 is Linux-only. On macOS, install Docker Desktop instead:"
+        echo "  https://docs.docker.com/desktop/install/mac-install/"
+        if exists brew; then
+            echo "Or: brew install --cask docker"
+        fi
+        return 0
+    fi
+
     # tested with ubuntu 24.04
 
     # System is up to date
@@ -104,101 +300,119 @@ install_docker_in_wsl2() {
 
     # No sudo for docker commands
     sudo groupadd docker || true
-    sudo usermod -aG docker $USER
+    sudo usermod -aG docker "$USER"
 
-    echo restart WSL2 to apply the changes
-    echo execute \"wsl --shutdown\" in cmd or pwsh
+    echo "restart WSL2 to apply the changes"
+    echo "execute \"wsl --shutdown\" in cmd or pwsh"
 }
 
 configure_vim() {
-    echo configure vim
+    echo "configure vim"
 
-    ln -svf ${DOTDIR}/vimrc ~/.vimrc
+    ln -svf "${DOTDIR}/vimrc" ~/.vimrc
 
     # never overwrite existing .vimrc.local
     if [ ! -f ~/.vimrc.local ]; then
-        cp ${DOTDIR}/vimrc.local ~/.vimrc.local
+        cp "${DOTDIR}/vimrc.local" ~/.vimrc.local
     fi
 
-    echo install vim plugins
+    echo "install vim plugins"
     vim "+PlugInstall" "+qa"
 }
 
 configure_tmux() {
-    echo configure tmux
+    echo "configure tmux"
 
-    ln -svf ${DOTDIR}/tmux.conf ~/.tmux.conf
+    ln -svf "${DOTDIR}/tmux.conf" ~/.tmux.conf
 }
 
 configure_git() {
-    echo configure git
+    echo "configure git"
 
-    ln -svf ${DOTDIR}/gitconfig.base ~/.gitconfig.base
+    ln -svf "${DOTDIR}/gitconfig.base" ~/.gitconfig.base
 
     if [ ! -e ~/.gitignore ]; then
-        ln -sv ${DOTDIR}/gitignore ~/.gitignore
+        ln -sv "${DOTDIR}/gitignore" ~/.gitignore
     fi
 
     if [ ! -e ~/.git_template ]; then
-        ln -sv ${DOTDIR}/git_template ~/.git_template
+        ln -sv "${DOTDIR}/git_template" ~/.git_template
     else
-        echo could not create ~/.git_template/ as it already exists
+        echo "could not create ~/.git_template/ as it already exists"
     fi
 
     if [ ! -e ~/.gitmessage ]; then
-        echo creating empty .gitmessage file
+        echo "creating empty .gitmessage file"
         touch ~/.gitmessage
     fi
 
     # never overwrite existing .gitconfig
     if [ ! -f ~/.gitconfig ]; then
-        cp ${DOTDIR}/gitconfig ~/.gitconfig
-        echo please edit your user in ~/.gitconfig
+        cp "${DOTDIR}/gitconfig" ~/.gitconfig
+        echo "please edit your user in ~/.gitconfig"
     fi
 }
 
 configure_zsh() {
-    echo configure zsh
-    echo download prompt
+    echo "configure zsh"
+    echo "download prompt"
     if [ ! -d ~/.zsh/pure ]; then
         git clone https://github.com/sindresorhus/pure.git ~/.zsh/pure
     fi
-    echo download colors
-    curl -fLo ~/.zsh/dircolors/dircolors.ansi-dark https://raw.githubusercontent.com/seebi/dircolors-solarized/master/dircolors.ansi-dark --create-dirs
+    echo "download colors"
+    curl -fLo ~/.zsh/dircolors/dircolors.ansi-dark \
+        https://raw.githubusercontent.com/seebi/dircolors-solarized/master/dircolors.ansi-dark \
+        --create-dirs
     mkdir -p ~/.zsh/completions
     mkdir -p ~/.zsh/cache
-    ln -svf ${DOTDIR}/zshrc ~/.zshrc
+    ln -svf "${DOTDIR}/zshrc" ~/.zshrc
 }
 
 configure_vifm() {
-    echo configure vifm
+    echo "configure vifm"
 
     local VIFM_CONFIG="${HOME}/.config/vifm"
-    mkdir -vp ${VIFM_CONFIG}/colors
+    mkdir -vp "${VIFM_CONFIG}/colors"
 
-    ln -svf ${DOTDIR}/solarized-dark.vifm ${VIFM_CONFIG}/colors/solarized-dark.vifm
-    ln -svf ${DOTDIR}/vifmrc ${VIFM_CONFIG}/vifmrc
+    ln -svf "${DOTDIR}/solarized-dark.vifm" "${VIFM_CONFIG}/colors/solarized-dark.vifm"
+    ln -svf "${DOTDIR}/vifmrc" "${VIFM_CONFIG}/vifmrc"
 }
 
 configure_kubernetes_tools() {
-    echo configure kubernetes tools
+    echo "configure kubernetes tools"
 
-    if [ -d ~/.zsh/completions ]; then
-        cd ~/.zsh/completions
-
-        kubectl  completion zsh > _kubectl
-        helm     completion zsh > _helm
+    if [ ! -d ~/.zsh/completions ]; then
+        return 0
     fi
 
+    if ! kubectl_usable; then
+        echo "skipping kubectl completion: kubectl missing or not runnable" >&2
+    else
+        kubectl completion zsh > ~/.zsh/completions/_kubectl
+    fi
+
+    if ! exists helm; then
+        echo "skipping helm completion: helm not found" >&2
+    else
+        helm completion zsh > ~/.zsh/completions/_helm
+    fi
 }
 
 configure_github_cli() {
-    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
-    sudo apt update
-    sudo apt install gh
+    if is_macos; then
+        ensure_homebrew || return 1
+        brew install gh
+    elif is_linux; then
+        curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+        sudo apt update
+        sudo apt install gh
+    else
+        echo "Unsupported OS: $OS" >&2
+        return 1
+    fi
 
-    echo choose "GitHub.com", "HTTPS", "Authenticate Git with your GitHub credentials=YES" and "Login with a web browser"
+    echo "choose \"GitHub.com\", \"HTTPS\", \"Authenticate Git with your GitHub credentials=YES\" and \"Login with a web browser\""
     gh auth login
 }
 
@@ -304,12 +518,14 @@ for choice in "${array[@]}"; do
             configure_kubernetes_tools
             ;;
         *)
-            echo invalid number $choice
+            echo "invalid number $choice"
             ;;
     esac
 done
 
 unset array
 unset DOTDIR
+unset OS
+unset ARCH
 
 # vim:set et sw=4 ts=4 fdm=indent:
